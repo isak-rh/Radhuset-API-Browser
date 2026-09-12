@@ -1,0 +1,55 @@
+[
+  {
+    "name": "Lantmäteriet STAC Vektor",
+    "url": "https://api.lantmateriet.se/stac-vektor/v1/",
+    "api_type": "stac",
+    "auth_required": "download"
+  },
+  {
+    "name": "Lantmäteriet STAC Ortofoto",
+    "url": "https://api.lantmateriet.se/stac-bild/v1/",
+    "api_type": "stac",
+    "auth_required": "download"
+  },
+  {
+    "name": "Lantmäteriet STAC Markhöjdmodell",
+    "url": "https://api.lantmateriet.se/stac-hojd/v1/",
+    "api_type": "stac",
+    "auth_required": "download"
+  },
+  {
+    "name": "NGP Sökning Detaljplan",
+    "url": "https://api.lantmateriet.se/distribution/geodatakatalog/sokning/v1/detaljplan/v2",
+    "api_type": "ngp",
+    "auth_required": "all",
+    "schema_url": "https://namespace.lantmateriet.se/distribution/geodatakatalog/sokning/v1/detaljplan/v2/detaljplan-ref-2.2.json"
+  },
+  {
+    "name": "NGP Sökning Kulturhistoriska lämningar",
+    "url": "https://api.lantmateriet.se/distribution/geodatakatalog/sokning/v1/kulturhistorisklamning/v1",
+    "api_type": "ngp",
+    "auth_required": "all",
+    "schema_url": "https://namespace.lantmateriet.se/distribution/geodatakatalog/sokning/v1/kulturhistorisklamning/v1/kulturhistorisklamning-ref-1.0.json"
+  },
+  {
+    "name": "NGP Sökning Byggnad",
+    "url": "https://api.lantmateriet.se/distribution/geodatakatalog/sokning/v1/byggnad/v1",
+    "api_type": "ngp",
+    "auth_required": "all",
+    "schema_url": "https://namespace.lantmateriet.se/distribution/geodatakatalog/byggnad/v1/byggnad-1.0.json"
+  },
+  {
+    "name": "NGP Sökning Strandskydd",
+    "url": "https://api.lantmateriet.se/distribution/geodatakatalog/sokning/v1/strandskydd/v1",
+    "api_type": "ngp",
+    "auth_required": "all",
+    "schema_url": "https://namespace.lantmateriet.se/distribution/geodatakatalog/sokning/v1/strandskydd/v1/strandskydd-ref-1.0.json"
+  },
+  {
+    "name": "NGP Sökning Gräns för fjällnära skog",
+    "url": "https://api.lantmateriet.se/distribution/geodatakatalog/sokning/v1/gransforfjallnaraskog/v1",
+    "api_type": "ngp",
+    "auth_required": "all",
+    "schema_url": "https://namespace.lantmateriet.se/distribution/geodatakatalog/sokning/v1/gransforfjallnaraskog/v1/gransforfjallnaraskog-ref-1.0.json"
+  }
+]

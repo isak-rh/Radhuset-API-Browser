@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Rådhuset API Browser</title>
+  <meta name="description" content="Browse, search and bulk-download geodata from STAC APIs and Lantmäteriet's NGP, in the browser.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f3ef" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c19" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="vendor/ol/ol.css">
+  <link rel="stylesheet" href="src/styles/app.css">
+  <script defer src="vendor/ol/ol.js"></script>
+  <script defer src="vendor/proj4/proj4.js"></script>
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="appbar">
+      <button type="button" id="sidebar-toggle" class="btn btn-ghost btn-icon" title="Search panel" aria-label="Search panel">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M9.5 4.5v15"/></svg>
+      </button>
+      <a class="brand" href="./" aria-label="Rådhuset API Browser, home">
+        <img src="assets/icon.svg" alt="" width="28" height="28">
+        <span class="brand-name">Rådhuset API Browser</span>
+        <span class="brand-sub">STAC &amp; NGP</span>
+      </a>
+      <div class="appbar-actions"></div>
+    </header>
+    <div class="workspace">
+      <aside id="sidebar" class="sidebar" aria-label="Search"></aside>
+      <main class="stage">
+        <div class="map-area">
+          <div id="map" class="map" role="application" aria-label="Map"></div>
+        </div>
+        <div class="splitter" role="separator" aria-orientation="horizontal" aria-label="Resize results" tabindex="0"></div>
+        <section id="results" class="results" aria-label="Results"></section>
+      </main>
+    </div>
+  </div>
+  <noscript><p class="fatal">Rådhuset API Browser needs JavaScript. / Rådhuset API Browser kräver JavaScript.</p></noscript>
+</body>
+</html>
