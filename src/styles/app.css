@@ -582,6 +582,7 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
   transform: translateX(-50%);
 }
 .search-area-bar .btn[aria-pressed='true'] { background: var(--brand); color: var(--brand-contrast); }
+.search-area-search, .search-area-search-sep { display: none; }
 .search-area-label {
   display: flex;
   align-items: center;
@@ -1119,6 +1120,9 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
     z-index: 30;
   }
   .app.sidebar-open .sidebar { transform: none; }
+  .draw-hint .btn { display: none; }
+  .search-area-bar .btn span { display: none; }
+  .search-area-search, .search-area-search-sep { display: inline-flex; }
   .drawer {
     position: fixed;
     top: var(--appbar-height);

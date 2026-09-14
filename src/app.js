@@ -270,14 +270,28 @@ export class App extends Emitter {
     const drawBox = button(t('sidebar.drawBox'), { icon: 'box', size: 'sm', 'aria-pressed': 'false', title: t('sidebar.drawBoxTitle'), onClick: () => this.#toggleDraw('box') });
     const drawPolygon = button(t('sidebar.drawPolygon'), { icon: 'polygon', size: 'sm', 'aria-pressed': 'false', title: t('sidebar.drawPolygonTitle'), onClick: () => this.#toggleDraw('polygon') });
     const load = button(t('sidebar.loadFile'), { icon: 'upload', size: 'sm', variant: 'ghost', title: t('sidebar.loadFileTitle'), onClick: () => fileInput.click() });
-    const zoomTo = button(t('sidebar.zoomTo'), { icon: 'target', size: 'sm', variant: 'ghost', onClick: () => this.map.fitSearchArea() });
-    const clearArea = button(t('sidebar.clear'), { icon: 'x', size: 'sm', variant: 'ghost', onClick: () => this.setArea(null) });
+    const zoomTo = button(t('sidebar.zoomTo'), { icon: 'target', size: 'sm', variant: 'ghost', title: t('sidebar.zoomTo'), onClick: () => this.map.fitSearchArea() });
+    const clearArea = button(t('sidebar.clear'), { icon: 'x', size: 'sm', variant: 'ghost', title: t('sidebar.clear'), onClick: () => this.setArea(null) });
+    for (const btn of [drawBox, drawPolygon, load, zoomTo, clearArea]) btn.setAttribute('aria-label', btn.title);
     const syncArea = () => {
       zoomTo.hidden = !this.area;
       clearArea.hidden = !this.area;
     };
     this.on('area', syncArea);
     syncArea();
+
+    // Icon-only; only ever shown on narrow screens (see .search-area-search in
+    // app.css), where the sidebar with the "real" search button isn't open by
+    // default.
+    const mobileSearch = button('', { icon: 'search', size: 'sm', variant: 'primary', class: 'search-area-search', title: t('common.search'), onClick: () => this.search() });
+    const mobileStop = button('', { icon: 'stop', size: 'sm', class: 'search-area-search', title: t('sidebar.stopSearching'), hidden: true, onClick: () => this.stopSearch() });
+    const syncSearchButton = () => {
+      const searching = this.results.status === 'searching';
+      mobileSearch.hidden = searching;
+      mobileStop.hidden = !searching;
+    };
+    this.on('resultsStatus', syncSearchButton);
+
     const el = h(
       'div',
       { class: 'search-area-bar' },
@@ -289,6 +303,9 @@ export class App extends Emitter {
       h('span', { class: 'toolbar-sep' }),
       zoomTo,
       clearArea,
+      h('span', { class: 'toolbar-sep search-area-search-sep' }),
+      mobileSearch,
+      mobileStop,
       fileInput,
     );
     return { el, drawBox, drawPolygon };
