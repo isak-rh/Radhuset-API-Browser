@@ -589,7 +589,6 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
   transform: translateX(-50%);
 }
 .search-area-bar .btn[aria-pressed='true'] { background: var(--brand); color: var(--brand-contrast); }
-.search-area-search, .search-area-search-sep { display: none; }
 .search-area-label {
   display: flex;
   align-items: center;
@@ -601,6 +600,26 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* Its own small floating bar, centred above .search-area-bar — only shown on
+   narrow screens (see the 900px breakpoint below), where the sidebar with
+   the "real" search button isn't open by default. bottom is pinned rather
+   than flowing from .search-area-bar, which stays a separate, independently
+   positioned element: 44px tall (30px btn-sm + 12px padding + 2px border) +
+   12px base offset + 8px gap. */
+.mobile-search-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  z-index: 5;
+  display: none;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%);
 }
 
 .draw-hint {
@@ -1154,7 +1173,7 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
   .app.sidebar-open .sidebar { transform: none; }
   .draw-hint .btn { display: none; }
   .search-area-bar .btn span { display: none; }
-  .search-area-search, .search-area-search-sep { display: inline-flex; }
+  .mobile-search-bar { display: flex; }
   .drawer {
     position: fixed;
     top: var(--appbar-height);

@@ -216,6 +216,7 @@ export class App extends Emitter {
     const hintText = h('span');
     const hint = h('div', { class: 'draw-hint', hidden: true, role: 'status' }, hintText, button(t('common.cancel'), { size: 'sm', variant: 'ghost', onClick: () => this.map.stopDraw() }));
     const searchAreaBar = this.#buildSearchAreaBar();
+    const mobileSearchBar = this.#buildMobileSearchBar();
     this.map.on('drawModeChanged', (mode) => {
       hint.hidden = !mode;
       hintText.textContent = mode === 'box'
@@ -256,7 +257,25 @@ export class App extends Emitter {
     const attribution = this.map.attributionElement;
     if (attribution) mapTools.append(h('div', { class: 'map-tools-attribution' }, attribution));
 
-    mapArea.append(mapTools, searchAreaBar.el, hint, dropZone);
+    mapArea.append(mapTools, searchAreaBar.el, mobileSearchBar, hint, dropZone);
+  }
+
+  /**
+   * A small floating bar above the search-area toolbar, holding just the
+   * Search button — only shown on narrow screens (see .mobile-search-bar in
+   * app.css), where the sidebar with the "real" search button isn't open by
+   * default.
+   */
+  #buildMobileSearchBar() {
+    const search = button(t('common.search'), { icon: 'search', size: 'sm', variant: 'primary', onClick: () => this.search() });
+    const stop = button(t('sidebar.stopSearching'), { icon: 'stop', size: 'sm', hidden: true, onClick: () => this.stopSearch() });
+    const sync = () => {
+      const searching = this.results.status === 'searching';
+      search.hidden = searching;
+      stop.hidden = !searching;
+    };
+    this.on('resultsStatus', sync);
+    return h('div', { class: 'mobile-search-bar' }, search, stop);
   }
 
   /** The search-area toolbar docked on the map: draw, load, zoom to and clear. */
@@ -285,18 +304,6 @@ export class App extends Emitter {
     this.on('area', syncArea);
     syncArea();
 
-    // Icon-only; only ever shown on narrow screens (see .search-area-search in
-    // app.css), where the sidebar with the "real" search button isn't open by
-    // default.
-    const mobileSearch = button('', { icon: 'search', size: 'sm', variant: 'primary', class: 'search-area-search', title: t('common.search'), onClick: () => this.search() });
-    const mobileStop = button('', { icon: 'stop', size: 'sm', class: 'search-area-search', title: t('sidebar.stopSearching'), hidden: true, onClick: () => this.stopSearch() });
-    const syncSearchButton = () => {
-      const searching = this.results.status === 'searching';
-      mobileSearch.hidden = searching;
-      mobileStop.hidden = !searching;
-    };
-    this.on('resultsStatus', syncSearchButton);
-
     const el = h(
       'div',
       { class: 'search-area-bar' },
@@ -308,9 +315,6 @@ export class App extends Emitter {
       h('span', { class: 'toolbar-sep' }),
       zoomTo,
       clearArea,
-      h('span', { class: 'toolbar-sep search-area-search-sep' }),
-      mobileSearch,
-      mobileStop,
       fileInput,
     );
     return { el, drawBox, drawPolygon };
