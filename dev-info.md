@@ -37,12 +37,6 @@ Listan över inbyggda API:er. Distribueras med appen och innehåller ingen anvä
 
 `api_type` är `stac` eller `ngp`. `auth_required` är `none`, `download` eller `all` (NGP-API:er kräver alltid `all`, oavsett vad som anges). `schema_url` och `schema_query_depth` gäller bara NGP-API:er och styr Query Builder.
 
-## Koordinatsystem
-
-Kartan är Web Mercator (EPSG:3857) över OpenStreetMap, och varje sökområde och resultat hanteras internt som WGS 84 (EPSG:4326) longitud/latitud.
-
-STAC-API:er frågas i WGS 84 enligt specifikationen. Lantmäteriets NGP-API:er använder SWEREF 99 TM som standard och följer inte STAC-specifikationens antagande om WGS 84, så sökningar mot dem anger uttryckligen OGC-koden `CRS84` via query-parametrarna `bbox-crs` och `crs`, vilket ber NGP att acceptera och returnera koordinater i WGS 84 i stället. (`EPSG:4326` används medvetet inte här — OGC API Features ger den koden latitud/longitud-ordning, så samma siffror skulle betyda en annan plats; `CRS84` är samma datum i den konventionella longitud/latitud-ordningen.) Inlästa filer i andra koordinatsystem (SWEREF 99, RT 90, UTM …) projiceras om till WGS 84 vid inläsning, utläst från filens egna CRS-metadata (en Shapefils `.prj`, en GeoPackages SRS-tabell, eller GeoJSON:s äldre `crs`-medlem).
-
 ## Inloggningsuppgifter och säkerhet
 
 Inget härifrån skickas någonstans förutom de API:er och OAuth2-token-endpoints du själv konfigurerar — det finns ingen serverkomponent alls.
@@ -141,12 +135,6 @@ The list of built-in APIs. Shipped with the app and holds no user data — edit 
 ```
 
 `api_type` is `stac` or `ngp`. `auth_required` is `none`, `download` or `all` (NGP APIs always require `all`, regardless of what's set). `schema_url` and `schema_query_depth` only apply to NGP APIs and drive the Query Builder.
-
-## Coordinate systems
-
-The map is Web Mercator (EPSG:3857) over OpenStreetMap, and every search area and result is handled internally as WGS 84 (EPSG:4326) longitude/latitude.
-
-STAC APIs are queried in WGS 84 per the spec. Lantmäteriet's NGP APIs default to SWEREF 99 TM and don't follow the STAC spec's WGS 84 assumption, so searches against them explicitly advertise the OGC `CRS84` code via the `bbox-crs` and `crs` query parameters, which asks NGP to accept and return coordinates in WGS 84 instead. (`EPSG:4326` is deliberately not used for this — OGC API Features gives that code latitude/longitude axis order, so the same numbers would mean a different place; `CRS84` is the same datum in the conventional longitude/latitude order.) Loaded files in other coordinate systems (SWEREF 99, RT 90, UTM …) are reprojected to WGS 84 on load, read from the file's own CRS metadata (a Shapefile's `.prj`, a GeoPackage's SRS table, or GeoJSON's legacy `crs` member).
 
 ## Credentials & security
 
