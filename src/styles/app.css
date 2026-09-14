@@ -502,8 +502,8 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
 .card-body { display: grid; gap: 9px; padding: 6px 12px 12px; }
 .auth-note { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
 
-.date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.date-row input { height: 32px; font-size: 13px; }
+.date-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.date-row input { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
 
 .coll-list {
   display: grid;
@@ -573,6 +573,13 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* Without an explicit width, an absolutely positioned box with only `left`
+     set (not `right`) shrinks-to-fit against just the *half* of the map to
+     the right of that 50% mark, not the full width behind the centering
+     transform — so it wraps once content passes ~50%, long before actually
+     reaching max-width. Asking for the content's natural (unwrapped) width
+     up front sidesteps that and lets max-width do the only clamping. */
+  width: max-content;
   max-width: calc(100% - 24px);
   padding: 6px;
   border: 1px solid var(--border);
@@ -648,19 +655,44 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
 .ol-zoom .ol-zoom-in { margin-bottom: 2px; }
 .ol-control button:hover, .ol-control button:focus { background: var(--hover); outline: none; color: var(--text); }
 .ol-zoom .ol-zoom-in, .ol-zoom .ol-zoom-out { border-radius: 8px; }
-.ol-scale-line { left: 12px; right: auto; bottom: 12px; padding: 3px 6px; border-radius: 6px; background: color-mix(in srgb, var(--surface) 85%, transparent); }
+/* Docked beside the zoom buttons (44px wide incl. border) instead of the
+   bottom-left corner, so the search-area toolbar can use the full bottom
+   edge without colliding with it. */
+.ol-scale-line { top: 12px; left: 68px; right: auto; bottom: auto; padding: 3px 6px; border-radius: 6px; background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .ol-scale-line-inner { border-color: var(--text-muted); color: var(--text); font: 500 11px var(--font); }
-.ol-attribution {
-  right: 8px;
-  bottom: 8px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
-  box-shadow: var(--shadow-sm);
+
+/* Reparented below .map-tools, not in its default bottom-right corner, so
+   that corner is free for the search-area toolbar. A card matching the
+   toolbar's own (.ol-zoom-style) chrome ties it visually to the toolbar
+   above, since it's a single OL-styled control rather than one of our own
+   icon buttons. */
+.map-tools-attribution { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 8px; }
+.map-tools-attribution .ol-attribution {
+  position: static;
+  margin: 0;
+  padding: 4px;
+  max-width: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+.map-tools-attribution .ol-attribution ul {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  margin: 0 8px 0 0;
+  padding: 6px 10px;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+  text-shadow: none;
   font-size: 11px;
 }
-.ol-attribution:not(.ol-collapsed) { background: var(--surface); box-shadow: var(--shadow-md); }
-.ol-attribution.ol-uncollapsible { border-radius: 6px 0 0 0; }
-.ol-attribution ul { color: var(--text); text-shadow: none; }
 .ol-attribution a { color: var(--text-muted); }
 
 /* ── Results ────────────────────────────────────────────────────────────── */

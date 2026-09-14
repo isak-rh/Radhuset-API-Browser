@@ -239,19 +239,24 @@ export class App extends Emitter {
       this.loadAreaFromFiles([...e.dataTransfer.files]);
     });
 
-    mapArea.append(
-      h(
-        'div',
-        { class: 'map-tools' },
-        tool('target', t('app.zoomToResults'), () => this.map.zoomToItems([...this.results.byUid.keys()])),
-        h('span', { class: 'map-tools-sep' }),
-        thumbnails,
-        muted,
-      ),
-      searchAreaBar.el,
-      hint,
-      dropZone,
+    const mapTools = h(
+      'div',
+      { class: 'map-tools' },
+      tool('target', t('app.zoomToResults'), () => this.map.zoomToItems([...this.results.byUid.keys()])),
+      h('span', { class: 'map-tools-sep' }),
+      thumbnails,
+      muted,
     );
+    // Reparent OpenLayers' own attribution control below the toolbar (rather
+    // than its default bottom-right corner), so that corner stays free for
+    // the search-area toolbar to use. It keeps OL's own look — it's a single
+    // control, not a row of our own icon buttons — but a matching card behind
+    // it (see .map-tools-attribution in app.css) ties it visually to the
+    // toolbar above it.
+    const attribution = this.map.attributionElement;
+    if (attribution) mapTools.append(h('div', { class: 'map-tools-attribution' }, attribution));
+
+    mapArea.append(mapTools, searchAreaBar.el, hint, dropZone);
   }
 
   /** The search-area toolbar docked on the map: draw, load, zoom to and clear. */

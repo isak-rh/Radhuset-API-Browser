@@ -129,6 +129,12 @@ export class MapView extends Emitter {
     return this.#drawMode;
   }
 
+  /** The attribution control's DOM element, for reparenting into the app's own toolbar. */
+  get attributionElement() {
+    const control = this.map.getControls().getArray().find((c) => c instanceof ol.control.Attribution);
+    return control?.element ?? null;
+  }
+
   /**
    * Start drawing a 'box' or 'polygon' search area.
    *
