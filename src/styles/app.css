@@ -1052,6 +1052,13 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
 :root[data-theme='dark'] .about-logo { filter: invert(0.92); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .about-logo { filter: invert(0.92); } }
 
+.welcome-dialog .dialog-header { display: none; }
+.welcome-dialog .dialog-body { padding-top: 20px; }
+.welcome { display: grid; gap: 12px; }
+.welcome-logo { display: block; width: 320px; max-width: 100%; margin: 4px 0 6px; }
+:root[data-theme='dark'] .welcome-logo { filter: invert(0.92); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .welcome-logo { filter: invert(0.92); } }
+
 /* ── Toasts ─────────────────────────────────────────────────────────────── */
 
 .toasts {

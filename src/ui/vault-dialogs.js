@@ -3,8 +3,10 @@
 import { MIN_PASSWORD_LENGTH, WrongPasswordError } from '../auth/vault.js';
 import { PasskeyError, passkeySupport } from '../auth/passkey.js';
 import { button, field, h, icon } from '../lib/dom.js';
+import * as consent from '../lib/consent.js';
 import { t } from '../i18n/index.js';
 import { alertDialog, confirmDialog, openDialog, passwordInput } from './dialog.js';
+import { showConsentReprompt } from './welcome.js';
 import { toast } from './toast.js';
 
 const errorLine = () => h('p', { class: 'error-text', role: 'alert', hidden: true });
@@ -134,6 +136,7 @@ export function unlockVault(app, { reason = null } = {}) {
 
 /** Make sure a vault exists and is unlocked, asking the user as needed. */
 export async function requireVault(app, reason) {
+  if (!consent.hasConsent() && !(await showConsentReprompt())) return false;
   if (!app.vault.exists) return createVault(app, { reason });
   return unlockVault(app, { reason });
 }

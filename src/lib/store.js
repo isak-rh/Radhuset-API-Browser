@@ -2,6 +2,8 @@
 // unavailable (blocked site data, some private modes) or full, and the app has to
 // keep working — it just cannot remember anything.
 
+import { hasConsent } from './consent.js';
+
 const PREFIX = 'rab.';
 
 export function load(key, fallback = null) {
@@ -13,8 +15,9 @@ export function load(key, fallback = null) {
   }
 }
 
-/** Returns false when the value could not be stored. */
+/** Returns false when the value could not be stored, or consent to store it is missing. */
 export function save(key, value) {
+  if (!hasConsent()) return false;
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
     return true;

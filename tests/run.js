@@ -2,7 +2,11 @@
 // stubbed: `fetch` is replaced per test with a router that answers from fixtures.
 
 import { DecryptionError, decryptWithPassword, encryptWithPassword, fromBase64Url, toBase64Url } from '../src/lib/crypto.js';
+import * as consent from '../src/lib/consent.js';
 import { Vault, WrongPasswordError } from '../src/auth/vault.js';
+
+// These tests exercise storage persistence directly; run them as a consented session.
+consent.setGranted();
 import { BindingStore, ProfileStore, newProfile } from '../src/auth/profiles.js';
 import { AuthSession } from '../src/auth/session.js';
 import { StacClient, withParams, CRS84 } from '../src/stac/client.js';

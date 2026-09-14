@@ -21,6 +21,21 @@ export const sv = {
     hidePassword: 'Dölj lösenord',
   },
 
+  welcome: {
+    title: 'Välkommen till Rådhuset API Browser',
+    logoAlt: 'Rådhuset Arkitekter',
+    purpose: 'Rådhuset API Browser låter dig söka och massladda ner svensk geodata från Lantmäteriets STAC- och NGP-API:er.',
+    license: 'Den här applikationen är fri programvara, licensierad under GNU General Public License (GPL), version 3 eller senare. Du får fritt använda, studera, ändra och dela den. Den tillhandahålls i befintligt skick, utan någon garanti — som med all fri programvara innebär det att du använder den på egen risk.',
+    sourceCode: 'Visa källkoden på GitHub',
+    credentials: 'Om du väljer att spara inloggningsuppgifter för ett API krypteras de och sparas bara på din egen enhet. Vi ser dem aldrig, och de skickas aldrig någon annanstans än till det API du använder dem med.',
+    consent: 'För att komma ihåg dina inställningar (till exempel språk, tema och eventuella sparade API-uppgifter) mellan besök behöver applikationen spara en liten mängd data i din webbläsare. Enligt EU-lag ber vi om ditt samtycke innan vi gör det.',
+    declineNote: 'Om du inte tillåter det fungerar applikationen ändå, men inget sparas på den här enheten — dina inställningar och eventuella uppgifter går förlorade när du stänger fliken, och du tillfrågas igen nästa gång.',
+    decline: 'Tillåt inte',
+    allow: 'Tillåt sparande på den här enheten',
+    repromptTitle: 'Spara data på den här enheten?',
+    repromptBody: 'Att spara den här inloggningen kräver att data sparas på din enhet, vilket du tidigare avböjde. Tillåta det nu?',
+  },
+
   index: {
     searchPanel: 'Sökpanel',
     brandHomeAria: '{name}, startsida',
