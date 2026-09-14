@@ -30,6 +30,15 @@ jobs:
           mkdir _site
           cp -r index.html assets config src vendor LICENSE THIRD-PARTY-NOTICES.md _site/
 
+      # Stamp the published copy with the commit it was built from, e.g.
+      # "89f0061 · 2026-09-14 12:34 UTC". The repository file stays 'dev'.
+      - name: Stamp version
+        run: |
+          commit=$(git rev-parse --short HEAD)
+          stamp=$(TZ=UTC git log -1 --date=format-local:'%Y-%m-%d %H:%M UTC' --format=%cd)
+          echo "export const APP_VERSION = '${commit} · ${stamp}';" > _site/src/version.js
+          cat _site/src/version.js
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v4

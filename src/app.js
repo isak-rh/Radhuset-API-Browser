@@ -44,8 +44,7 @@ import { openAboutDialog, openExportDialog, openImportDialog } from './ui/settin
 import { Sidebar } from './ui/sidebar.js';
 import { toast } from './ui/toast.js';
 import { unlockVault } from './ui/vault-dialogs.js';
-
-export const APP_VERSION = '1.0.0';
+import { APP_VERSION } from './version.js';
 
 const DEFAULT_PREFS = {
   api: null,
