@@ -2,7 +2,7 @@
 
 import { h, icon } from '../lib/dom.js';
 import { t } from '../i18n/index.js';
-import { openMenu } from './menu.js';
+import { openMenu, closeMenu } from './menu.js';
 
 const typeLabel = (api) => (api.apiType === 'ngp' ? 'NGP' : 'STAC');
 
@@ -33,6 +33,7 @@ export class ApiPicker {
   }
 
   open() {
+    if (this.el.getAttribute('aria-expanded') === 'true') { closeMenu(); return; }
     const current = this.app.api?.name;
     const entry = (api) => ({
       label: api.name,
