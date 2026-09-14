@@ -57,10 +57,10 @@ export const en = {
   },
 
   lantmateriet: {
-    setupPrefix: 'Lantmäteriet credentials are set up in ',
-    apiPortalen: 'API-portalen',
-    setupMid: ' (OAuth2, recommended) or on ',
+    setupPrefix: 'Apply for access to Lantmäteriet APIs on ',
     geotorget: 'Geotorget',
+    setupMid: '. Basic credentials are included. OAuth2 credentials (recommended) can be set up in ',
+    apiPortalen: 'API-portalen',
     setupSuffix: '.',
   },
 

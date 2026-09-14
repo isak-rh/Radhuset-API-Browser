@@ -57,10 +57,10 @@ export const sv = {
   },
 
   lantmateriet: {
-    setupPrefix: 'Lantmäteriets inloggningsuppgifter skapas i ',
-    apiPortalen: 'API-portalen',
-    setupMid: ' (OAuth2, rekommenderas) eller på ',
+    setupPrefix: 'Ansök om åtkomst till Lantmäteriets API:er på ',
     geotorget: 'Geotorget',
+    setupMid: '. Grundläggande inloggningsuppgifter ingår. OAuth2-uppgifter (rekommenderas) kan skapas i ',
+    apiPortalen: 'API-portalen',
     setupSuffix: '.',
   },
 

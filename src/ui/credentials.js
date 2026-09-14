@@ -209,7 +209,7 @@ export function promptCredentials(app, api, purpose) {
         existingSelect ? h('div', { class: 'or-divider' }, h('span', { text: t('credentials.orAddNew') })) : null,
         h('form', { class: 'form', onsubmit: (e) => { e.preventDefault(); submit(); } }, field(t('credentials.profileName'), nameInput), creds.el, storage.el, error, h('button', { type: 'submit', hidden: true })),
         /lantmateriet/i.test(api.url)
-          ? h('p', { class: 'muted small' }, t('lantmateriet.setupPrefix'), h('a', { href: 'https://apimanager.lantmateriet.se/devportal/apis', target: '_blank', rel: 'noopener', text: t('lantmateriet.apiPortalen') }), t('lantmateriet.setupMid'), h('a', { href: 'https://geotorget.lantmateriet.se/', target: '_blank', rel: 'noopener', text: t('lantmateriet.geotorget') }), t('lantmateriet.setupSuffix'))
+          ? h('p', { class: 'muted small' }, t('lantmateriet.setupPrefix'), h('a', { href: 'https://geotorget.lantmateriet.se/', target: '_blank', rel: 'noopener', text: t('lantmateriet.geotorget') }), t('lantmateriet.setupMid'), h('a', { href: 'https://apimanager.lantmateriet.se/devportal/apis', target: '_blank', rel: 'noopener', text: t('lantmateriet.apiPortalen') }), t('lantmateriet.setupSuffix'))
           : null,
       ),
       footer: [button(t('common.cancel'), { onClick: () => dialog.close() }), button(t('common.continue'), { variant: 'primary', onClick: submit })],
