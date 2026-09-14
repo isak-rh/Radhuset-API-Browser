@@ -411,7 +411,7 @@ export const sv = {
     unlockToUseProfile: 'Lås upp sparade inloggningsuppgifter för att använda den här profilen.',
     manageAuthProfiles: 'Hantera inloggningsprofiler',
     authAllRequired: 'Det valda API:et kräver inloggningsuppgifter för att söka och för att ladda ner.',
-    authDownloadOnly: 'Det valda API:et är öppet för sökning. Det kräver inloggningsuppgifter för att ladda ner.',
+    authDownloadOnly: 'Det valda API:et är öppet för sökning, men kräver inloggningsuppgifter för att ladda ner.',
     noCredentials: 'Inga inloggningsuppgifter',
     savedProfileLocked: 'Sparad profil (låst)',
     unlockSavedProfilesOption: 'Lås upp sparade profiler…',

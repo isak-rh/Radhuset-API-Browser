@@ -15,7 +15,6 @@ export class ResultsPanel {
     this.selectAll = button(t('results.selectAll'), { size: 'sm', variant: 'ghost', onClick: () => app.checkAll(true) });
     this.selectNone = button(t('results.selectNone'), { size: 'sm', variant: 'ghost', onClick: () => app.checkAll(false) });
     this.download = button(t('results.downloadSelected'), { icon: 'download', size: 'sm', variant: 'primary', onClick: () => app.downloadChecked() });
-    this.propsToggle = button(t('results.properties'), { icon: 'panelRight', size: 'sm', 'aria-pressed': 'false', onClick: () => app.properties.toggle() });
     this.table = new ResultsTable(app, { onContextMenu: (context) => app.openItemMenu(context) });
 
     this.el = h(
@@ -27,14 +26,12 @@ export class ResultsPanel {
         h('div', { class: 'toolbar-group' }, this.status, this.stop, this.loadMore),
         h('span', { class: 'spacer' }),
         h('div', { class: 'toolbar-group' }, this.selection, this.selectAll, this.selectNone, this.download),
-        h('span', { class: 'toolbar-sep', 'aria-hidden': 'true' }),
-        this.propsToggle,
       ),
       this.table.el,
     );
 
     const render = () => this.render();
-    for (const event of ['results', 'resultsAdded', 'resultsStatus', 'checked', 'drawer', 'download']) app.on(event, render);
+    for (const event of ['results', 'resultsAdded', 'resultsStatus', 'checked', 'download']) app.on(event, render);
     this.render();
   }
 
@@ -63,6 +60,5 @@ export class ResultsPanel {
     this.download.disabled = !checked.length || Boolean(app.activeDownload);
     this.selectAll.disabled = !items.length || checked.length === items.length;
     this.selectNone.disabled = !checked.length;
-    this.propsToggle.setAttribute('aria-pressed', String(Boolean(app.properties?.isOpen)));
   }
 }

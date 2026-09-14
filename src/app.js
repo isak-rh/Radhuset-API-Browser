@@ -43,7 +43,6 @@ import { ResultsPanel } from './ui/results-panel.js';
 import { openAboutDialog, openExportDialog, openImportDialog } from './ui/settings.js';
 import { Sidebar } from './ui/sidebar.js';
 import { toast } from './ui/toast.js';
-import { unlockVault } from './ui/vault-dialogs.js';
 import { APP_VERSION } from './version.js';
 
 const DEFAULT_PREFS = {
@@ -164,12 +163,11 @@ export class App extends Emitter {
   #buildLayout() {
     const { root } = this;
     const actions = root.querySelector('.appbar-actions');
-    this.vaultChip = h('button', { type: 'button', class: 'chip', hidden: true, onclick: () => this.#onVaultChip() });
+    this.propsToggle = button('', { icon: 'panelRight', variant: 'ghost', title: t('results.properties'), 'aria-pressed': 'false', onClick: () => this.properties.toggle() });
     const menuButton = button('', { icon: 'settings', variant: 'ghost', title: t('app.settingsTitle'), 'aria-haspopup': 'menu', onClick: () => this.#openAppMenu(menuButton) });
-    actions.append(this.vaultChip, menuButton);
+    actions.append(this.propsToggle, menuButton);
+    this.on('drawer', (open) => this.propsToggle.setAttribute('aria-pressed', String(open)));
     root.querySelector('#sidebar-toggle').addEventListener('click', () => root.classList.toggle('sidebar-open'));
-    this.vault.on('change', () => this.#renderVaultChip());
-    this.#renderVaultChip();
 
     const mapArea = root.querySelector('.map-area');
     this.map = new MapView(root.querySelector('#map'));
@@ -253,7 +251,6 @@ export class App extends Emitter {
       searchAreaBar.el,
       hint,
       dropZone,
-      h('img', { class: 'map-logo', src: 'assets/radhuset-logo.svg', alt: '', 'aria-hidden': 'true' }),
     );
   }
 
@@ -335,23 +332,6 @@ export class App extends Emitter {
       apply(next);
       this.prefs.set('resultsHeight', Math.round(next));
     });
-  }
-
-  #renderVaultChip() {
-    const { vault } = this;
-    this.vaultChip.hidden = !vault.exists;
-    this.vaultChip.classList.toggle('is-unlocked', vault.unlocked);
-    this.vaultChip.replaceChildren(icon(vault.unlocked ? 'unlock' : 'lock', { size: 16 }), h('span', { text: vault.unlocked ? t('app.vaultUnlocked') : t('app.vaultLocked') }));
-    this.vaultChip.title = vault.unlocked ? t('app.vaultUnlockedTitle') : t('app.vaultLockedTitle');
-  }
-
-  #onVaultChip() {
-    if (this.vault.unlocked) {
-      this.vault.lock();
-      toast(t('app.vaultLockedToast'));
-    } else {
-      unlockVault(this);
-    }
   }
 
   #openAppMenu(anchor) {

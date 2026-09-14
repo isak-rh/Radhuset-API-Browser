@@ -8,6 +8,7 @@ import { t, tn } from '../i18n/index.js';
 import { ApiPicker } from './api-picker.js';
 import { promptCredentials } from './credentials.js';
 import { queryFieldCount } from './query-builder.js';
+import { toast } from './toast.js';
 import { unlockVault } from './vault-dialogs.js';
 
 function card(title, iconName, body, actions = null) {
@@ -65,12 +66,33 @@ export class Sidebar {
       title: t('sidebar.manageAuthProfiles'),
       onClick: () => this.app.openProfiles(this.app.api && this.app.bindings.get(this.app.api.name)),
     });
-    return card(t('sidebar.credentialsTitle'), 'key', [this.authText, h('div', { class: 'input-row' }, this.authSelect, manage), this.authNote]);
+    this.vaultToggle = button('', { icon: 'lock', size: 'sm', variant: 'ghost', onClick: () => this.#onVaultToggle() });
+    return card(t('sidebar.credentialsTitle'), 'key', [this.authText, h('div', { class: 'input-row' }, this.authSelect, manage), this.authNote], this.vaultToggle);
+  }
+
+  #onVaultToggle() {
+    const { app } = this;
+    if (app.vault.unlocked) {
+      app.vault.lock();
+      toast(t('app.vaultLockedToast'));
+    } else {
+      unlockVault(app);
+    }
+  }
+
+  #renderVaultToggle() {
+    const { vault } = this.app;
+    this.vaultToggle.hidden = !vault.exists;
+    this.vaultToggle.replaceChildren(icon(vault.unlocked ? 'unlock' : 'lock', { size: 16 }));
+    const title = vault.unlocked ? t('app.vaultUnlockedTitle') : t('app.vaultLockedTitle');
+    this.vaultToggle.title = title;
+    this.vaultToggle.setAttribute('aria-label', title);
   }
 
   #renderAuth() {
     const { app } = this;
     const api = app.api;
+    this.#renderVaultToggle();
     this.authCard.hidden = !api || api.authRequired === 'none';
     if (this.authCard.hidden) return;
     this.authText.textContent = api.authRequired === 'all'

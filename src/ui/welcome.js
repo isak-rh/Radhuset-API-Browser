@@ -43,7 +43,7 @@ export function showWelcomeDialog() {
     body: h(
       'div',
       { class: 'welcome' },
-      h('a', { href: RADHUSET_URL, target: '_blank', rel: 'noopener' }, h('img', { src: 'assets/radhuset-logo.svg', alt: t('welcome.logoAlt'), class: 'welcome-logo' })),
+      h('a', { class: 'welcome-logo-link', href: RADHUSET_URL, target: '_blank', rel: 'noopener' }, h('img', { src: 'assets/radhuset-logo.svg', alt: t('welcome.logoAlt'), class: 'welcome-logo' })),
       h('p', { text: t('welcome.purpose') }),
       h('p', { text: t('welcome.license') }),
       h('p', null, h('a', { href: GITHUB_URL, target: '_blank', rel: 'noopener', text: t('welcome.sourceCode') })),

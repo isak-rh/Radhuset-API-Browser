@@ -411,7 +411,7 @@ export const en = {
     unlockToUseProfile: 'Unlock saved credentials to use this profile.',
     manageAuthProfiles: 'Manage auth profiles',
     authAllRequired: 'The selected API needs credentials to search and to download.',
-    authDownloadOnly: 'The selected API is open to search. It needs credentials to download.',
+    authDownloadOnly: 'The selected API is open to search, but needs credentials to download.',
     noCredentials: 'No credentials',
     savedProfileLocked: 'Saved profile (locked)',
     unlockSavedProfilesOption: 'Unlock saved profiles…',

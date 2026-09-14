@@ -209,7 +209,7 @@ export function openAboutDialog(app) {
     body: h(
       'div',
       { class: 'about' },
-      h('img', { src: 'assets/radhuset-logo.svg', alt: 'Rådhuset Arkitekter', class: 'about-logo' }),
+      h('a', { href: 'https://radhuset.se', target: '_blank', rel: 'noopener' }, h('img', { src: 'assets/radhuset-logo.svg', alt: 'Rådhuset Arkitekter', class: 'about-logo' })),
       h('p', null, h('strong', { text: 'Rådhuset API Browser' }), ` ${app.version}`),
       h('p', { text: t('settings.about.description') }),
       h('p', { class: 'muted small', text: t('settings.about.privacy') }),

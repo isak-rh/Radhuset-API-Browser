@@ -24,7 +24,7 @@ Tre saker skiljer den från andra STAC-klienter:
 
 Öppna appens webbadress i din webbläsare - använd antingen [vår egen distribution på Github Pages,](https://isak-rh.github.io/Radhuset-API-Browser/) eller ladda ner källkoden och hosta din egen. Inget behöver installeras, och inget skickas till någon server förutom de API:er du själv väljer att använda.
 
-Som standard kan du bläddra i Lantmäteriets STAC-API:er men inte ladda ner filer. Nedladdningar, och all åtkomst till NGP-API:er, kräver inloggningsuppgifter. För Lantmäteriet använder du [Geotorget](https://geotorget.lantmateriet.se/) för att begära åtkomst och grundläggande uppgifter, och [API-portalen](https://apimanager.lantmateriet.se/devportal/apis) för att sätta upp OAuth2-uppgifter. När du har dina uppgifter öppnar du **Manage auth profiles…** i panelen till vänster (🔑-knappen under Auth profile), skapar en **Basic**-profil (användarnamn + lösenord) eller en **OAuth2**-profil (klient-ID, klienthemlighet, token-URL) och väljer den för varje API som ska använda den.
+Som standard kan du bläddra i Lantmäteriets STAC-API:er men inte ladda ner filer. Nedladdningar, och all åtkomst till NGP-API:er, kräver inloggningsuppgifter. För Lantmäteriet använder du [Geotorget](https://geotorget.lantmateriet.se/) för att begära åtkomst och grundläggande uppgifter, och [API-portalen](https://apimanager.lantmateriet.se/devportal/apis) för att sätta upp OAuth2-uppgifter. När du har dina uppgifter klickar du på inställningsknappen under **Inloggningsuppgifter**, skapar en **Basic**-profil (användarnamn + lösenord) eller en **OAuth2**-profil (klient-ID, klienthemlighet, token-URL) och väljer den för varje API som ska använda den.
 
 Du väljer själv om varje uppgift bara ska gälla för den öppna fliken (och alltså försvinner när du stänger den), eller sparas i webbläsaren till nästa gång. Om du väljer att spara den krypteras den och lagras enbart på din egen enhet — vi ser den aldrig, och den skickas aldrig någon annanstans än till det API du använder den med. Eftersom uppgifterna bara finns lokalt hos dig går de inte att komma åt från en annan dator eller webbläsare, och de försvinner om du rensar webbläsarens lagring. 
 
@@ -34,11 +34,11 @@ Vi rekommenderar OAuth2-uppgifter, eftersom de går att återkalla och inte ger 
 
 ## Grundläggande användning
 
-Välj ett API, markera ut ett område på kartan, sök och ladda ner det du hittar. Sökområdet kan ritas som en box eller polygon, eller läsas in från en fil (GeoJSON, Shapefile eller GeoPackage). Kryssa i de sökträffar du vill ha och tryck **Download selected**.
+Välj ett API, markera ut ett område på kartan, sök och ladda ner det du hittar. Sökområdet kan ritas som en box eller polygon, eller läsas in från en fil (GeoJSON, Shapefile eller GeoPackage). Kryssa i de sökträffar du vill ha och klicka på **Ladda ner markerade**.
 
-När du bläddrar i NGP-API:er rekommenderas att du använder **Query Builder** för att begränsa dina sökningar till den typ av data du letar efter. Nedladdningar från NGP levereras i de format som Lantmäteriet anger.
+När du bläddrar i NGP-API:er rekommenderas att du använder **Frågebyggaren** för att begränsa dina sökningar till den typ av data du letar efter. Nedladdningar från NGP levereras i de format som Lantmäteriet anger.
 
-Högerklicka på ett objekt och välj **Properties** för att öppna panelen med detaljerad information om det markerade objektet. Detta är särskilt användbart när man bläddrar i NGP.
+Högerklicka på ett objekt och välj **Egenskaper** för att öppna panelen med detaljerad information om det markerade objektet. Detta är särskilt användbart när man bläddrar i NGP.
 
 I en Chromium-baserad webbläsare (Chrome, Edge, Opera, Brave …) väljer du en mapp en gång, och alla filer i nedladdningen sparas direkt dit. I andra webbläsare laddas filerna i stället ner som en ZIP-fil eller separata filer, på det sätt webbläsaren normalt hanterar nedladdningar.
 
@@ -82,7 +82,7 @@ Three things set it apart from other STAC clients:
 
 Open the app's web address in your browser - either use [our own deployment on GitHub Pages,](https://isak-rh.github.io/Radhuset-API-Browser/) or download the source code and host your own. Nothing needs to be installed, and nothing is sent to any server except the APIs you choose to use.
 
-By default, you can browse the Lantmäteriet STAC APIs but not download files. Downloads, and any access to NGP APIs, require credentials. For Lantmäteriet, you use [Geotorget](https://geotorget.lantmateriet.se/) to request access and basic credentials, and [API-Portalen](https://apimanager.lantmateriet.se/devportal/apis) to set up OAuth2 credentials. Once you have credentials, open **Manage auth profiles…** in the left-hand panel (the 🔑 button under Auth profile), create a **Basic** (username + password) or **OAuth2** (client ID, client secret, token URL) profile, and select it for each API that should use it.
+By default, you can browse the Lantmäteriet STAC APIs but not download files. Downloads, and any access to NGP APIs, require credentials. For Lantmäteriet, you use [Geotorget](https://geotorget.lantmateriet.se/) to request access and basic credentials, and [API-Portalen](https://apimanager.lantmateriet.se/devportal/apis) to set up OAuth2 credentials. Once you have credentials, click the settings button under **Credentials**, create a **Basic** (username + password) or **OAuth2** (client ID, client secret, token URL) profile, and select it for each API that should use it.
 
 You choose whether each credential applies only to the current tab (and disappears once you close it), or is saved in the browser for next time. If you choose to save it, it's encrypted and stored only on your own device — we never see it, and it's never sent anywhere except to the API you're using it with. Because it only ever lives locally, it isn't accessible from another computer or browser, and it's lost if you clear the browser's storage. 
 
