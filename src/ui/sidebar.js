@@ -1,10 +1,8 @@
-// The search panel: API, credentials, search area, filters and the Search button.
+// The search panel: API, credentials, filters and the Search button.
 
 import { hasQueryBuilder, needsAuthForBrowse } from '../config/apis.js';
 import { profileTypeLabel } from '../auth/profiles.js';
-import { bboxSizeKm, geometryBbox, vertexCount } from '../geo/area.js';
-import { ACCEPTED_FILES } from '../geo/loaders.js';
-import { append, button, clear, h, icon, select } from '../lib/dom.js';
+import { button, clear, h, icon, select } from '../lib/dom.js';
 import { debounce, formatNumber } from '../lib/format.js';
 import { t, tn } from '../i18n/index.js';
 import { ApiPicker } from './api-picker.js';
@@ -21,15 +19,11 @@ function card(title, iconName, body, actions = null) {
   );
 }
 
-const km = (value) => (value < 1 ? `${Math.round(value * 1000)} m` : `${value < 10 ? value.toFixed(1) : Math.round(value)} km`);
-const coord = (value) => value.toFixed(5);
-
 export class Sidebar {
   constructor(app) {
     this.app = app;
     this.picker = new ApiPicker(app);
     this.authCard = this.#buildAuth();
-    this.areaCard = this.#buildArea();
     this.queryCard = this.#buildQuery();
     this.timeCard = this.#buildTime();
     this.collectionsCard = this.#buildCollections();
@@ -37,7 +31,7 @@ export class Sidebar {
       'div',
       { class: 'sidebar-inner' },
       h('div', { class: 'sidebar-top' }, this.picker.el),
-      h('div', { class: 'sidebar-scroll' }, this.authCard, this.areaCard, this.queryCard, this.timeCard, this.collectionsCard),
+      h('div', { class: 'sidebar-scroll' }, this.authCard, this.queryCard, this.timeCard, this.collectionsCard),
       this.#buildFooter(),
     );
 
@@ -46,8 +40,6 @@ export class Sidebar {
       this.#renderQuery();
     });
     app.on('query', () => this.#renderQuery());
-    app.on('area', () => this.#renderArea());
-    app.on('drawMode', (mode) => this.#renderDrawMode(mode));
     app.on('collections', () => this.#renderCollections());
     app.on('collectionSelection', () => this.#renderCollectionStatus());
     for (const event of ['results', 'resultsStatus']) app.on(event, () => this.#renderSearchButton());
@@ -57,7 +49,6 @@ export class Sidebar {
     app.vault.on('change', auth);
 
     this.#renderAuth();
-    this.#renderArea();
     this.#renderQuery();
     this.#renderCollections();
     this.#renderSearchButton();
@@ -115,68 +106,6 @@ export class Sidebar {
       return;
     }
     app.bindings.set(api.name, value || null);
-  }
-
-  // ── Search area ─────────────────────────────────────────────────────────
-
-  #buildArea() {
-    this.fileInput = h('input', {
-      type: 'file',
-      accept: ACCEPTED_FILES,
-      multiple: true,
-      hidden: true,
-      onchange: (event) => {
-        const files = [...event.target.files];
-        event.target.value = '';
-        if (files.length) this.app.loadAreaFromFiles(files);
-      },
-    });
-    this.drawBox = button(t('sidebar.drawBox'), { icon: 'box', size: 'sm', 'aria-pressed': 'false', title: t('sidebar.drawBoxTitle'), onClick: () => this.#toggleDraw('box') });
-    this.drawPolygon = button(t('sidebar.drawPolygon'), { icon: 'polygon', size: 'sm', 'aria-pressed': 'false', title: t('sidebar.drawPolygonTitle'), onClick: () => this.#toggleDraw('polygon') });
-    const load = button(t('sidebar.loadFile'), { icon: 'upload', size: 'sm', title: t('sidebar.loadFileTitle'), onClick: () => this.fileInput.click() });
-    this.areaSummary = h('div', { class: 'area-summary' });
-    this.areaActions = h(
-      'div',
-      { class: 'button-row' },
-      button(t('sidebar.zoomTo'), { icon: 'target', size: 'sm', variant: 'ghost', onClick: () => this.app.map.fitSearchArea() }),
-      button(t('sidebar.clear'), { icon: 'x', size: 'sm', variant: 'ghost', onClick: () => this.app.setArea(null) }),
-    );
-    return card(t('sidebar.searchArea'), 'map', [h('div', { class: 'area-tools' }, this.drawBox, this.drawPolygon, load), this.areaSummary, this.areaActions, this.fileInput]);
-  }
-
-  #toggleDraw(mode) {
-    const { map } = this.app;
-    if (map.drawMode === mode) map.stopDraw();
-    else map.startDraw(mode);
-  }
-
-  #renderDrawMode(mode) {
-    this.drawBox.setAttribute('aria-pressed', String(mode === 'box'));
-    this.drawPolygon.setAttribute('aria-pressed', String(mode === 'polygon'));
-  }
-
-  #renderArea() {
-    const { area } = this.app;
-    clear(this.areaSummary);
-    this.areaActions.hidden = !area;
-    if (!area) {
-      this.areaSummary.append(h('p', { class: 'muted small', text: t('sidebar.areaEmptyHint') }));
-      return;
-    }
-    const bbox = area.kind === 'bbox' ? area.bbox : geometryBbox(area.geometry);
-    const [width, height] = bboxSizeKm(bbox);
-    const kind = area.kind === 'bbox' ? t('sidebar.areaKindBox') : area.geometry.type.replace(/([a-z])([A-Z])/g, '$1 $2');
-    const vertices = area.kind === 'geometry' ? vertexCount(area.geometry) : 0;
-    // append(), not the native .append(): a plain DOM element stringifies a
-    // null/false argument into a literal "null"/"false" text node instead of
-    // skipping it, which is what the geometry-only summary line below relies on.
-    append(this.areaSummary, [
-      h('div', { class: 'area-kind' }, h('strong', { text: kind }), h('span', { class: 'muted', text: width || height ? `${km(width)} × ${km(height)}` : '' })),
-      area.kind === 'geometry'
-        ? h('div', { class: 'muted small', text: `${area.source === 'file' ? t('sidebar.areaFromFile', { name: area.name }) : t('sidebar.areaDrawnOnMap')}${vertices > 1 ? tn('sidebar.verticesSuffix', vertices) : ''}` })
-        : null,
-      h('div', { class: 'coords', title: t('sidebar.coordsTitle') }, h('span', { text: `${coord(bbox[0])}, ${coord(bbox[1])}` }), h('span', { text: `${coord(bbox[2])}, ${coord(bbox[3])}` })),
-    ]);
   }
 
   // ── Attribute query ─────────────────────────────────────────────────────

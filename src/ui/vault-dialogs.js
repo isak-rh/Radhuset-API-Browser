@@ -111,12 +111,12 @@ export function unlockVault(app, { reason = null } = {}) {
       'form',
       { class: 'form', onsubmit: (e) => { e.preventDefault(); withPassword(); } },
       reason ? h('p', { text: reason }) : null,
-      field(t('vault.masterPassword'), pw.wrap, { id: 'vault-unlock-pw', htmlFor: pw.input }),
-      error,
+      passkeys.length ? button(t('vault.unlockWithPasskey'), { icon: 'passkey', onClick: withPasskey, class: 'btn-block' }) : null,
       passkeys.length
         ? h('div', { class: 'or-divider' }, h('span', { text: t('common.or') }))
         : null,
-      passkeys.length ? button(t('vault.unlockWithPasskey'), { icon: 'passkey', onClick: withPasskey, class: 'btn-block' }) : null,
+      field(t('vault.masterPassword'), pw.wrap, { id: 'vault-unlock-pw', htmlFor: pw.input }),
+      error,
       h('button', { type: 'button', class: 'link-button', text: t('vault.forgotPassword'), onclick: forgot }),
       h('button', { type: 'submit', hidden: true }),
     );

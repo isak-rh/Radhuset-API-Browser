@@ -13,7 +13,7 @@
 //   resultsStatus        searching / done / stopped / error
 //   checked              the set ticked for download changed
 //   highlight            the highlighted rows changed ({ scroll })
-//   drawer, drawMode, download
+//   drawer, download
 
 import { ApiRegistry, hasQueryBuilder, needsAuthForBrowse } from './config/apis.js';
 import { BindingStore, ProfileStore } from './auth/profiles.js';
@@ -21,7 +21,7 @@ import { AuthSession } from './auth/session.js';
 import { Vault } from './auth/vault.js';
 import { entriesFor } from './downloads/runner.js';
 import { LARGE_VERTEX_COUNT, geometryArea, vertexCount } from './geo/area.js';
-import { loadSearchGeometry } from './geo/loaders.js';
+import { ACCEPTED_FILES, loadSearchGeometry } from './geo/loaders.js';
 import { button, h, icon } from './lib/dom.js';
 import { Emitter } from './lib/emitter.js';
 import { formatNumber, todayIso } from './lib/format.js';
@@ -218,12 +218,14 @@ export class App extends Emitter {
 
     const hintText = h('span');
     const hint = h('div', { class: 'draw-hint', hidden: true, role: 'status' }, hintText, button(t('common.cancel'), { size: 'sm', variant: 'ghost', onClick: () => this.map.stopDraw() }));
+    const searchAreaBar = this.#buildSearchAreaBar();
     this.map.on('drawModeChanged', (mode) => {
       hint.hidden = !mode;
       hintText.textContent = mode === 'box'
         ? t('app.drawBoxHint')
         : t('app.drawPolygonHint');
-      this.emit('drawMode', mode);
+      searchAreaBar.drawBox.setAttribute('aria-pressed', String(mode === 'box'));
+      searchAreaBar.drawPolygon.setAttribute('aria-pressed', String(mode === 'polygon'));
     });
 
     const dropZone = h('div', { class: 'drop-zone', hidden: true }, icon('upload', { size: 28 }), h('p', { text: t('app.dropToUseAsSearchArea') }));
@@ -244,16 +246,62 @@ export class App extends Emitter {
       h(
         'div',
         { class: 'map-tools' },
-        tool('map', t('app.zoomToSearchArea'), () => this.map.fitSearchArea()),
         tool('target', t('app.zoomToResults'), () => this.map.zoomToItems([...this.results.byUid.keys()])),
         h('span', { class: 'map-tools-sep' }),
         thumbnails,
         muted,
       ),
+      searchAreaBar.el,
       hint,
       dropZone,
       h('img', { class: 'map-logo', src: 'assets/radhuset-logo.svg', alt: '', 'aria-hidden': 'true' }),
     );
+  }
+
+  /** The search-area toolbar docked on the map: draw, load, zoom to and clear. */
+  #buildSearchAreaBar() {
+    const fileInput = h('input', {
+      type: 'file',
+      accept: ACCEPTED_FILES,
+      multiple: true,
+      hidden: true,
+      onchange: (event) => {
+        const files = [...event.target.files];
+        event.target.value = '';
+        if (files.length) this.loadAreaFromFiles(files);
+      },
+    });
+    const drawBox = button(t('sidebar.drawBox'), { icon: 'box', size: 'sm', 'aria-pressed': 'false', title: t('sidebar.drawBoxTitle'), onClick: () => this.#toggleDraw('box') });
+    const drawPolygon = button(t('sidebar.drawPolygon'), { icon: 'polygon', size: 'sm', 'aria-pressed': 'false', title: t('sidebar.drawPolygonTitle'), onClick: () => this.#toggleDraw('polygon') });
+    const load = button(t('sidebar.loadFile'), { icon: 'upload', size: 'sm', variant: 'ghost', title: t('sidebar.loadFileTitle'), onClick: () => fileInput.click() });
+    const zoomTo = button(t('sidebar.zoomTo'), { icon: 'target', size: 'sm', variant: 'ghost', onClick: () => this.map.fitSearchArea() });
+    const clearArea = button(t('sidebar.clear'), { icon: 'x', size: 'sm', variant: 'ghost', onClick: () => this.setArea(null) });
+    const syncArea = () => {
+      zoomTo.hidden = !this.area;
+      clearArea.hidden = !this.area;
+    };
+    this.on('area', syncArea);
+    syncArea();
+    const el = h(
+      'div',
+      { class: 'search-area-bar' },
+      h('div', { class: 'search-area-label' }, icon('map', { size: 14 }), h('span', { text: t('sidebar.searchArea') })),
+      h('span', { class: 'toolbar-sep' }),
+      drawBox,
+      drawPolygon,
+      load,
+      h('span', { class: 'toolbar-sep' }),
+      zoomTo,
+      clearArea,
+      fileInput,
+    );
+    return { el, drawBox, drawPolygon };
+  }
+
+  #toggleDraw(mode) {
+    const { map } = this;
+    if (map.drawMode === mode) map.stopDraw();
+    else map.startDraw(mode);
   }
 
   #initSplitter(handle, stage) {

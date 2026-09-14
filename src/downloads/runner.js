@@ -1,7 +1,8 @@
 // Planning and running a batch download.
 
+import { t } from '../i18n/index.js';
 import { Emitter } from '../lib/emitter.js';
-import { isAbort } from '../lib/http.js';
+import { NetworkError, isAbort } from '../lib/http.js';
 import { filenameFromDisposition, filenameFromUrl, sanitizeFilename, uniqueName, withExtension } from './filenames.js';
 
 /** Every downloadable asset of *items*, as { item, asset } entries. */
@@ -125,6 +126,16 @@ export class DownloadRun extends Emitter {
       if (length && !response.headers.get('Content-Encoding')) job.total = length;
 
       const type = response.headers.get('Content-Type') || job.asset.type;
+      // A STAC asset that is actually a link to a web page (NGP's
+      // Kulturhistoriska Lämningar does this) downloads as an HTML document
+      // instead of the file its title promises. Only detectable by fetching
+      // it, so this only surfaces once the user tries.
+      if (/^text\/html\b/i.test(type)) {
+        await response.body?.cancel();
+        job.error = t('download.assetIsWebPageError');
+        this.#set(job, 'failed');
+        return;
+      }
       const suggested = filenameFromDisposition(response.headers.get('Content-Disposition'))
         || filenameFromUrl(job.asset.href)
         || job.fallbackName;
@@ -158,7 +169,11 @@ export class DownloadRun extends Emitter {
       if (isAbort(error) || this.cancelled) {
         this.#set(job, 'cancelled');
       } else {
-        job.error = error?.message || String(error);
+        // A browser can't tell "wrong credentials" from "network trouble" here:
+        // a server that omits CORS headers on its error responses makes an
+        // unauthorized request look identical to one that never got there. The
+        // former is far more common in practice, so lead with it.
+        job.error = error instanceof NetworkError ? t('download.assetNetworkError') : (error?.message || String(error));
         this.#set(job, 'failed');
       }
     }

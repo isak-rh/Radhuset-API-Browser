@@ -28,6 +28,7 @@ function jsonNode(key, value, { open = false } = {}) {
     const summary = h(
       'summary',
       null,
+      icon('chevronRight', { size: 13, className: 'json-caret' }),
       h('span', { class: 'json-key', text: key }),
       h('span', { class: 'json-meta', text: entries.length ? (Array.isArray(value) ? `[${entries.length}]` : `{${entries.length}}`) : t('properties.empty') }),
       h('button', { type: 'button', class: 'json-copy', title: t('properties.copyAsJson'), onclick: (e) => { e.preventDefault(); copyText(JSON.stringify(value, null, 2)); } }, icon('copy', { size: 14 })),
@@ -190,8 +191,8 @@ export class PropertiesPanel {
       h(
         'summary',
         null,
-        h('span', { class: 'prop-item-title', text: item.title }),
-        h('span', { class: 'prop-item-meta', text: [app.collectionTitle(item.collection), formatDateTime(item.datetime)].filter((v) => v && v !== '—').join(' · ') }),
+        icon('chevronRight', { size: 15, className: 'prop-item-caret' }),
+        h('div', { class: 'prop-item-heading' }, h('span', { class: 'prop-item-title', text: item.title }), h('span', { class: 'prop-item-meta', text: [app.collectionTitle(item.collection), formatDateTime(item.datetime)].filter((v) => v && v !== '—').join(' · ') })),
       ),
       h(
         'div',

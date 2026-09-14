@@ -7,7 +7,7 @@
 
 import { needsAuthForBrowse, needsAuthForDownload } from '../config/apis.js';
 import { IncompleteProfileError, TokenFetchError } from '../auth/session.js';
-import { DEFAULT_TOKEN_URL, PROFILE_TYPES, missingFields, newProfile, profileTypeLabel } from '../auth/profiles.js';
+import { DEFAULT_TOKEN_URL, missingFields, newProfile, profileTypeLabel } from '../auth/profiles.js';
 import { VaultLockedError } from '../auth/vault.js';
 import { button, field, h, select } from '../lib/dom.js';
 import { t } from '../i18n/index.js';
@@ -15,7 +15,28 @@ import { alertDialog, openDialog, passwordInput } from './dialog.js';
 import { requireVault, unlockVault } from './vault-dialogs.js';
 
 const PROFILE_TYPE_LABELS = { oauth2: 'credentials.typeOAuth2', basic: 'credentials.typeBasic' };
-const translatedProfileTypes = () => PROFILE_TYPES.map(([v]) => [v, t(PROFILE_TYPE_LABELS[v])]);
+
+/** Radio pair for the profile type: OAuth2 first and default, both visible at once. */
+function typeChoice(type, name) {
+  const oauth = h('input', { type: 'radio', name, value: 'oauth2', checked: type !== 'basic' });
+  const basic = h('input', { type: 'radio', name, value: 'basic', checked: type === 'basic' });
+  return {
+    el: h(
+      'fieldset',
+      { class: 'choice-cards' },
+      h('legend', { text: t('credentials.type') }),
+      h('label', { class: 'choice-card' }, oauth, h('span', null, h('strong', { text: t(PROFILE_TYPE_LABELS.oauth2) }))),
+      h('label', { class: 'choice-card' }, basic, h('span', null, h('strong', { text: t(PROFILE_TYPE_LABELS.basic) }))),
+    ),
+    get value() {
+      return basic.checked ? 'basic' : 'oauth2';
+    },
+    addEventListener(eventType, fn) {
+      oauth.addEventListener(eventType, fn);
+      basic.addEventListener(eventType, fn);
+    },
+  };
+}
 
 /**
  * True once *api* has usable credentials for *purpose* ('browse' | 'download'),
@@ -49,7 +70,7 @@ export async function ensureCredentials(app, api, purpose) {
 /** The credential fields of a profile form, for either profile type. */
 export function credentialFields(profile) {
   const inputs = {
-    type: select(translatedProfileTypes(), profile.type, { id: `cred-type-${profile.id}` }),
+    type: typeChoice(profile.type, `cred-type-${profile.id}`),
     clientId: h('input', { type: 'text', value: profile.clientId, autocomplete: 'off', spellcheck: 'false' }),
     clientSecret: passwordInput({ value: profile.clientSecret, autocomplete: 'off' }),
     tokenUrl: h('input', { type: 'url', value: profile.tokenUrl || DEFAULT_TOKEN_URL, spellcheck: 'false' }),
@@ -77,7 +98,7 @@ export function credentialFields(profile) {
   sync();
   return {
     inputs,
-    el: h('div', { class: 'form-group' }, field(t('credentials.type'), inputs.type), oauth, basic),
+    el: h('div', { class: 'form-group' }, inputs.type.el, oauth, basic),
     /** The profile with the form's values applied. */
     read: (base) => ({
       ...base,
@@ -121,7 +142,8 @@ export function promptCredentials(app, api, purpose) {
     if (/lantmateriet/i.test(api.url)) draft.name = t('credentials.lantmaterietName', { apiType: api.apiType === 'ngp' ? 'NGP' : 'STAC' });
     const nameInput = h('input', { type: 'text', value: draft.name });
     const creds = credentialFields(draft);
-    const storage = storageChoice(false, 'cred-storage');
+    // If they've saved credentials before, they likely want this one saved too.
+    const storage = storageChoice(existing.some((p) => p.persist), 'cred-storage');
     const error = h('p', { class: 'error-text', role: 'alert', hidden: true });
 
     const existingSelect = existing.length

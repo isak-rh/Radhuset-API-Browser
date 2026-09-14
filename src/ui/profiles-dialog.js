@@ -255,6 +255,17 @@ export function openProfilesDialog(app, { selectId = null } = {}) {
 
   const offProfiles = app.profiles.on('change', renderAll);
   const offVault = app.vault.on('change', renderAll);
+  // A locked vault drops its saved profiles from the store; if the editor was
+  // showing one, it would otherwise keep displaying that now-stale copy as if
+  // it were still selected and editable.
+  const offVaultLock = app.vault.on('lock', () => {
+    if (current?.persist) {
+      current = null;
+      isDraft = false;
+      renderAll();
+      renderEditor();
+    }
+  });
 
   const dialog = openDialog({
     title: t('profiles.title'),
@@ -271,6 +282,7 @@ export function openProfilesDialog(app, { selectId = null } = {}) {
     onClose: () => {
       offProfiles();
       offVault();
+      offVaultLock();
     },
   });
 

@@ -54,6 +54,7 @@ export class MapView extends Emitter {
   #highlighted = new Set();
   #styles = null;
   #draw = null;
+  #boxDraw = null;
   #drawMode = null;
   #thumbnails = [];
   #thumbnailsVisible = true;
@@ -128,30 +129,28 @@ export class MapView extends Emitter {
     return this.#drawMode;
   }
 
-  /** Start drawing a 'box' (drag) or 'polygon' (click points, double-click to finish). */
+  /**
+   * Start drawing a 'box' or 'polygon' search area.
+   *
+   * A polygon is the stock click-per-vertex interaction (double-click, or
+   * click the first corner again, to finish). A box supports two gestures —
+   * press and drag one corner to the other, or click one corner then click
+   * the opposite one — which OpenLayers' own Draw interaction cannot mix (its
+   * freehand flag picks one gesture for the whole interaction), so #startBoxDraw
+   * implements both by hand.
+   */
   startDraw(mode) {
     this.stopDraw();
-    const draw = mode === 'box'
-      ? new ol.interaction.Draw({
-          type: 'Circle',
-          geometryFunction: ol.interaction.Draw.createBox(),
-          freehand: true,
-          style: this.#styles.drawing,
-        })
-      : new ol.interaction.Draw({ type: 'Polygon', style: this.#styles.drawing });
-
+    this.#drawMode = mode;
+    this.target.classList.add('is-drawing');
+    this.emit('drawModeChanged', mode);
+    if (mode === 'box') {
+      this.#startBoxDraw();
+      return;
+    }
+    const draw = new ol.interaction.Draw({ type: 'Polygon', style: this.#styles.drawing });
     draw.on('drawend', (event) => {
-      const geometry = event.feature.getGeometry();
-      let area;
-      if (mode === 'box') {
-        const extent = geometry.getExtent();
-        const resolution = this.map.getView().getResolution();
-        // A click without a drag makes a zero-sized box; stay in draw mode.
-        if (ol.extent.getWidth(extent) < resolution * 3 || ol.extent.getHeight(extent) < resolution * 3) return;
-        area = bboxArea(ol.proj.transformExtent(extent, VIEW_PROJECTION, DATA_PROJECTION));
-      } else {
-        area = geometryArea(this.format.writeGeometryObject(geometry), { source: 'drawn' });
-      }
+      const area = geometryArea(this.format.writeGeometryObject(event.feature.getGeometry()), { source: 'drawn' });
       // Defer: removing the interaction inside its own drawend handler leaves
       // OpenLayers mid-event.
       setTimeout(() => {
@@ -161,16 +160,91 @@ export class MapView extends Emitter {
     });
     this.map.addInteraction(draw);
     this.#draw = draw;
-    this.#drawMode = mode;
-    this.target.classList.add('is-drawing');
-    this.emit('drawModeChanged', mode);
+  }
+
+  /**
+   * A box drawn either by dragging from corner to corner in one gesture, or by
+   * clicking one corner and then the other. A plain click first fixes a
+   * corner (kept until a second click finishes the box); a drag of more than a
+   * few pixels finishes immediately, from wherever it started.
+   */
+  #startBoxDraw() {
+    const source = new ol.source.Vector();
+    const layer = new ol.layer.Vector({ source, zIndex: 11, style: this.#styles.drawing });
+    this.map.addLayer(layer);
+    const sketch = new ol.Feature();
+    source.addFeature(sketch);
+
+    // DragPan would otherwise pan the map underneath a drag-to-draw gesture.
+    const dragPan = this.map.getInteractions().getArray().find((i) => i instanceof ol.interaction.DragPan);
+    dragPan?.setActive(false);
+
+    const DRAG_TOLERANCE_PX = 4;
+    let fixedCorner = null; // set by a plain click, waiting for the opposite corner
+    let pointerDown = null; // { pixel, coordinate } from the most recent pointerdown
+
+    const extentOf = (a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+    const preview = (a, b) => sketch.setGeometry(ol.geom.Polygon.fromExtent(extentOf(a, b)));
+
+    const finish = (a, b) => {
+      const extent = extentOf(a, b);
+      const resolution = this.map.getView().getResolution();
+      // Two corners on top of each other make a zero-sized box; keep drawing.
+      if (ol.extent.getWidth(extent) < resolution * 3 || ol.extent.getHeight(extent) < resolution * 3) return false;
+      const area = bboxArea(ol.proj.transformExtent(extent, VIEW_PROJECTION, DATA_PROJECTION));
+      setTimeout(() => {
+        this.stopDraw();
+        this.emit('areaDrawn', area);
+      });
+      return true;
+    };
+
+    const onDown = (event) => {
+      if (event.originalEvent.button > 0) return;
+      pointerDown = { pixel: event.pixel, coordinate: event.coordinate };
+    };
+    const onMove = (event) => {
+      const anchor = fixedCorner || pointerDown?.coordinate;
+      if (anchor) preview(anchor, event.coordinate);
+    };
+    const onUp = (event) => {
+      if (!pointerDown) return;
+      const anchor = fixedCorner || pointerDown.coordinate;
+      const moved = Math.hypot(event.pixel[0] - pointerDown.pixel[0], event.pixel[1] - pointerDown.pixel[1]);
+      pointerDown = null;
+      if (moved >= DRAG_TOLERANCE_PX) {
+        finish(anchor, event.coordinate);
+      } else if (fixedCorner) {
+        finish(fixedCorner, event.coordinate);
+      } else {
+        fixedCorner = anchor;
+        preview(anchor, anchor);
+      }
+    };
+    this.map.on('pointerdown', onDown);
+    this.map.on('pointermove', onMove);
+    this.map.on('pointerup', onUp);
+
+    this.#boxDraw = {
+      destroy: () => {
+        this.map.un('pointerdown', onDown);
+        this.map.un('pointermove', onMove);
+        this.map.un('pointerup', onUp);
+        dragPan?.setActive(true);
+        this.map.removeLayer(layer);
+      },
+    };
   }
 
   stopDraw() {
-    if (!this.#draw) return;
-    this.#draw.abortDrawing();
-    this.map.removeInteraction(this.#draw);
-    this.#draw = null;
+    if (!this.#drawMode) return;
+    this.#boxDraw?.destroy();
+    this.#boxDraw = null;
+    if (this.#draw) {
+      this.#draw.abortDrawing();
+      this.map.removeInteraction(this.#draw);
+      this.#draw = null;
+    }
     this.#drawMode = null;
     this.target.classList.remove('is-drawing');
     this.emit('drawModeChanged', null);
