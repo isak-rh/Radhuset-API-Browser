@@ -508,6 +508,8 @@ export const en = {
     downloadAll: 'Download all {n}',
     download: 'Download',
     filesHeading: 'Files',
+    openLink: 'Open {title} in a new tab',
+    linksHeading: 'Links',
     metadataHeading: 'Metadata',
   },
 

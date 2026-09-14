@@ -243,6 +243,37 @@ test('models: items get a collection-scoped uid; thumbnails are not downloads', 
   equal(parseItem({ id: 'no-extent', properties: {} }), null);
 });
 
+test('models: with a link domain, assets hosted elsewhere are links, not downloads', () => {
+  const feature = {
+    id: 'x', bbox: [1, 2, 3, 4], properties: {},
+    assets: {
+      file: { href: 'https://download.lantmateriet.se/a.zip', 'file:size': 7 },
+      page: { href: 'https://example.org/lamning/1' },
+    },
+  };
+  const ngp = parseItem(feature, { linkDomain: 'lantmateriet.se' });
+  equal(ngp.downloadable.map((a) => a.key), ['file']);
+  equal(ngp.links.map((a) => a.key), ['page']);
+  equal(ngp.totalSize, 7);
+  const stac = parseItem(feature);
+  equal(stac.downloadable.map((a) => a.key), ['file', 'page']);
+  equal(stac.links, []);
+});
+
+test('client: credentials are only sent to the API\'s own domain', async () => {
+  const calls = stubFetch(() => new Response('ok'));
+  try {
+    const auth = { credentialsFor: async () => ({ type: 'basic', authorization: 'Basic abc' }) };
+    const client = new StacClient({ name: 'S', url: 'https://api.lantmateriet.se/stac/v1', apiType: 'stac', authRequired: 'download' }, auth);
+    await client.openAsset({ href: 'https://dl1.lantmateriet.se/a.zip' });
+    await client.openAsset({ href: 'https://files.example.org/a.zip' });
+    equal(calls[0].init.headers.Authorization, 'Basic abc');
+    equal(calls[1].init.headers.Authorization, undefined);
+  } finally {
+    calls.restore();
+  }
+});
+
 // ── downloads ──────────────────────────────────────────────────────────────
 
 test('downloads: one job per distinct href', () => {

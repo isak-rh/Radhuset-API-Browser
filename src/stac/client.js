@@ -15,7 +15,7 @@
 import { isNgp, needsAuthForBrowse, needsAuthForDownload } from '../config/apis.js';
 import { areaToRequest } from '../geo/area.js';
 import { NetworkError, ensureOk, request } from '../lib/http.js';
-import { parseCollection, parseItem } from './models.js';
+import { parseCollection, parseItem, siteDomain } from './models.js';
 
 export const CRS84 = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84';
 export const PAGE_SIZE = 100;
@@ -68,9 +68,13 @@ export class StacClient {
    * the token and retry once. Wraps a single request, not an operation: a 401 on
    * page 7 of a search retries page 7. Only 401 is retried — a 403 is usually a
    * scope problem, and retrying would mint a token per request for nothing.
+   *
+   * Credentials only ever go to the API's own domain (dl1.lantmateriet.se is
+   * fine for api.lantmateriet.se): hrefs come from server responses, and a
+   * token must not follow one to an unrelated host.
    */
   async #authed(url, init, required) {
-    const credentials = await this.#credentials(required);
+    const credentials = siteDomain(url) === siteDomain(this.api.url) ? await this.#credentials(required) : null;
     const send = (c) => request(url, {
       ...init,
       headers: { ...(init.headers || {}), ...(c ? { Authorization: c.authorization } : {}) },
@@ -163,6 +167,7 @@ export class StacClient {
 
   async continueSearch(cursor, { signal, maxItems = Infinity, onPage } = {}) {
     const required = needsAuthForBrowse(this.api);
+    const linkDomain = isNgp(this.api) ? siteDomain(this.api.url) : null;
     const items = [];
     const visited = new Set();
     let next = cursor;
@@ -183,7 +188,7 @@ export class StacClient {
             body: JSON.stringify(next.body),
           };
       const data = await this.#json(url, init, required);
-      const page = (Array.isArray(data.features) ? data.features : []).map(parseItem).filter(Boolean);
+      const page = (Array.isArray(data.features) ? data.features : []).map((f) => parseItem(f, { linkDomain })).filter(Boolean);
       items.push(...page);
       next = nextCursor(data, next);
       // The cursor travels with each page, so a search stopped between pages

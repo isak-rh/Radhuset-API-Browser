@@ -22,13 +22,35 @@ function normalizeBbox(bbox) {
 
 const isThumbnail = (asset) => asset.roles.includes('thumbnail') || asset.key === 'thumbnail';
 
+/** The last two labels of *url*'s hostname ("api.lantmateriet.se" → "lantmateriet.se"), or null. */
+export function siteDomain(url) {
+  try {
+    return new URL(url).hostname.split('.').slice(-2).join('.').toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isExternalLink(href, domain) {
+  try {
+    const u = new URL(href);
+    return /^https?:$/.test(u.protocol) && siteDomain(href) !== domain;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * A search result, or null for a feature without an id or any extent.
  *
  * `uid` identifies the item within one result set: STAC ids are only unique
  * within a collection, so the collection is part of it.
+ *
+ * With *linkDomain*, assets hosted outside that domain are web page links
+ * (`links`), not files (`downloadable`) — NGP's Kulturhistoriska lämningar
+ * links to external sites that way, with no media type to tell them apart.
  */
-export function parseItem(feature) {
+export function parseItem(feature, { linkDomain = null } = {}) {
   if (!isObject(feature) || feature.id == null) return null;
   const geometry = isGeometry(feature.geometry) ? feature.geometry : null;
   let bbox = Array.isArray(feature.bbox) && feature.bbox.length >= 4 ? normalizeBbox(feature.bbox) : null;
@@ -47,7 +69,10 @@ export function parseItem(feature) {
       size: toSize(a['file:size']),
     }));
   const thumbnail = assets.find(isThumbnail) || null;
-  const downloadable = assets.filter((a) => !isThumbnail(a) && a.href);
+  const candidates = assets.filter((a) => !isThumbnail(a) && a.href);
+  const isLink = (a) => Boolean(linkDomain) && isExternalLink(a.href, linkDomain);
+  const links = candidates.filter(isLink);
+  const downloadable = candidates.filter((a) => !isLink(a));
   const sizes = downloadable.map((a) => a.size);
 
   const properties = isObject(feature.properties) ? feature.properties : {};
@@ -65,6 +90,7 @@ export function parseItem(feature) {
     properties,
     rawAssets,
     downloadable,
+    links,
     thumbnailUrl: thumbnail?.href || null,
     // Null when any asset's size is undeclared, so a total is never understated.
     totalSize: sizes.length && sizes.every((s) => s !== null) ? sizes.reduce((a, b) => a + b, 0) : null,

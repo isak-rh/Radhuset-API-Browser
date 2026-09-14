@@ -508,6 +508,8 @@ export const sv = {
     downloadAll: 'Ladda ner alla {n}',
     download: 'Ladda ner',
     filesHeading: 'Filer',
+    openLink: 'Öppna {title} i en ny flik',
+    linksHeading: 'Länkar',
     metadataHeading: 'Metadata',
   },
 

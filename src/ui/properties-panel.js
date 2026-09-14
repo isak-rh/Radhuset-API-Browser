@@ -172,18 +172,30 @@ export class PropertiesPanel {
 
   #itemCard(item, open) {
     const { app } = this;
-    const assets = item.downloadable.map((asset) => h(
+    const row = (asset, fileIcon, meta, action) => h(
       'li',
       { class: 'asset-row' },
-      icon('file', { size: 16 }),
+      icon(fileIcon, { size: 16 }),
       h(
         'div',
         { class: 'asset-text' },
         h('span', { class: 'asset-title', text: asset.title, title: asset.key }),
-        h('span', { class: 'asset-meta', text: [asset.type.split(';')[0], asset.roles.join(', '), asset.size ? formatBytes(asset.size) : null].filter(Boolean).join(' · ') || asset.key }),
+        h('span', { class: 'asset-meta', text: meta || asset.key }),
       ),
       button('', { icon: 'copy', variant: 'ghost', size: 'sm', title: t('properties.copyLink'), onClick: () => copyText(asset.href) }),
+      action,
+    );
+    const assets = item.downloadable.map((asset) => row(
+      asset,
+      'file',
+      [asset.type.split(';')[0], asset.roles.join(', '), asset.size ? formatBytes(asset.size) : null].filter(Boolean).join(' · '),
       button('', { icon: 'download', variant: 'ghost', size: 'sm', title: t('properties.downloadAsset', { title: asset.title }), onClick: () => app.downloadAssets([{ item, asset }]) }),
+    ));
+    const links = item.links.map((asset) => row(
+      asset,
+      'externalLink',
+      new URL(asset.href).hostname,
+      button('', { icon: 'externalLink', variant: 'ghost', size: 'sm', title: t('properties.openLink', { title: asset.title }), onClick: () => window.open(asset.href, '_blank', 'noopener,noreferrer') }),
     ));
     return h(
       'details',
@@ -209,6 +221,8 @@ export class PropertiesPanel {
         ),
         item.downloadable.length ? h('h3', { class: 'prop-heading', text: t('properties.filesHeading') }) : null,
         item.downloadable.length ? h('ul', { class: 'asset-list' }, assets) : null,
+        links.length ? h('h3', { class: 'prop-heading', text: t('properties.linksHeading') }) : null,
+        links.length ? h('ul', { class: 'asset-list' }, links) : null,
         h('h3', { class: 'prop-heading', text: t('properties.metadataHeading') }),
         h('div', { class: 'json-tree' }, jsonNode('id', item.id), jsonNode('collection', item.collection), jsonNode('properties', item.properties, { open: true }), jsonNode('assets', item.rawAssets)),
       ),
