@@ -24,6 +24,7 @@ export class Sidebar {
   constructor(app) {
     this.app = app;
     this.picker = new ApiPicker(app);
+    this.apiCard = card(t('sidebar.selectApi'), 'api', [this.picker.el]);
     this.authCard = this.#buildAuth();
     this.queryCard = this.#buildQuery();
     this.timeCard = this.#buildTime();
@@ -31,7 +32,7 @@ export class Sidebar {
     this.el = h(
       'div',
       { class: 'sidebar-inner' },
-      h('div', { class: 'sidebar-top' }, this.picker.el),
+      h('div', { class: 'sidebar-top' }, this.apiCard),
       h('div', { class: 'sidebar-scroll' }, this.authCard, this.queryCard, this.timeCard, this.collectionsCard),
       this.#buildFooter(),
     );

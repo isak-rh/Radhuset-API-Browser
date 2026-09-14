@@ -407,6 +407,7 @@ export const en = {
   },
 
   sidebar: {
+    selectApi: 'Select API',
     credentialsTitle: 'Credentials',
     authProfileAriaLabel: 'Auth profile for this API',
     unlockToUseProfile: 'Unlock saved credentials to use this profile.',

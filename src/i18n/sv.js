@@ -407,6 +407,7 @@ export const sv = {
   },
 
   sidebar: {
+    selectApi: 'Välj API',
     credentialsTitle: 'Inloggningsuppgifter',
     authProfileAriaLabel: 'Inloggningsprofil för det här API:et',
     unlockToUseProfile: 'Lås upp sparade inloggningsuppgifter för att använda den här profilen.',
