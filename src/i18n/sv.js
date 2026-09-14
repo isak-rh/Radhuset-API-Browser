@@ -66,6 +66,7 @@ export const sv = {
 
   app: {
     settingsTitle: 'Inställningar',
+    showProperties: 'Visa egenskaper',
     vaultUnlocked: 'Upplåst',
     vaultLocked: 'Låst',
     vaultUnlockedTitle: 'Sparade inloggningsuppgifter är upplåsta. Klicka för att låsa dem.',

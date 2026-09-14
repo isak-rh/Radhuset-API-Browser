@@ -163,7 +163,7 @@ export class App extends Emitter {
   #buildLayout() {
     const { root } = this;
     const actions = root.querySelector('.appbar-actions');
-    this.propsToggle = button('', { icon: 'panelRight', variant: 'ghost', title: t('results.properties'), 'aria-pressed': 'false', onClick: () => this.properties.toggle() });
+    this.propsToggle = button(t('app.showProperties'), { icon: 'panelRight', class: 'props-toggle', 'aria-pressed': 'false', 'aria-label': t('app.showProperties'), onClick: () => this.properties.toggle() });
     const menuButton = button('', { icon: 'settings', variant: 'ghost', title: t('app.settingsTitle'), 'aria-haspopup': 'menu', onClick: () => this.#openAppMenu(menuButton) });
     actions.append(this.propsToggle, menuButton);
     this.on('drawer', (open) => this.propsToggle.setAttribute('aria-pressed', String(open)));

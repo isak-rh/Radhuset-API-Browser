@@ -66,6 +66,7 @@ export const en = {
 
   app: {
     settingsTitle: 'Settings',
+    showProperties: 'Show properties',
     vaultUnlocked: 'Unlocked',
     vaultLocked: 'Locked',
     vaultUnlockedTitle: 'Saved credentials are unlocked. Click to lock them.',

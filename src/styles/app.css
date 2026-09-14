@@ -1137,6 +1137,8 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
 
 @media (max-width: 600px) {
   .brand-name { font-size: 15px; }
+  .props-toggle { width: 34px; padding: 0; gap: 0; }
+  .props-toggle span { display: none; }
   .rt-grid { grid-template-columns: 36px minmax(120px, 1fr) 88px 72px; }
   .rt-collection, .rt-files, .rt-header .rt-cell:nth-child(3), .rt-header .rt-cell:nth-child(5) { display: none; }
   .choice-cards, .grid-2, .dl-summary { grid-template-columns: 1fr; }
