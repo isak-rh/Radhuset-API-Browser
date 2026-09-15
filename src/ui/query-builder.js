@@ -40,26 +40,54 @@ function fieldSelect(fields) {
 
 /** A multi-value picker for enum fields with the "is one of" operator. */
 function checklist(values) {
-  const summary = h('summary', { class: 'qb-multi-summary' });
+  const listId = `qb-multi-${Math.random().toString(36).slice(2, 9)}`;
+  // A popover renders in the top layer, so the list isn't clipped by the
+  // dialog's `overflow: auto` body and can extend past its edges like a
+  // normal dropdown. Position is computed on open since a popover is always
+  // `position: fixed`, detached from the button's layout flow.
+  const summary = h('button', { type: 'button', class: 'qb-multi-summary', popovertarget: listId, 'aria-haspopup': 'listbox', 'aria-expanded': 'false' });
   const boxes = values.map((v) => h('input', { type: 'checkbox', value: String(v) }));
+  const list = h(
+    'div',
+    { class: 'qb-multi-list', popover: 'auto', id: listId, role: 'listbox' },
+    values.map((v, i) => h('label', { class: 'check' }, boxes[i], h('span', { text: String(v) }))),
+  );
   const update = () => {
     const chosen = boxes.filter((b) => b.checked).map((b) => b.value);
     summary.textContent = chosen.length ? chosen.join(', ') : t('query.chooseValues');
     summary.classList.toggle('is-placeholder', !chosen.length);
   };
-  const el = h(
-    'details',
-    { class: 'qb-multi' },
-    summary,
-    h('div', { class: 'qb-multi-list' }, values.map((v, i) => h('label', { class: 'check' }, boxes[i], h('span', { text: String(v) })))),
-  );
+  const position = () => {
+    const r = summary.getBoundingClientRect();
+    list.style.left = `${r.left}px`;
+    list.style.top = `${r.bottom + 4}px`;
+    list.style.width = `${r.width}px`;
+  };
+  let stopTracking = null;
+  list.addEventListener('toggle', (event) => {
+    const isOpen = event.newState === 'open';
+    summary.classList.toggle('is-open', isOpen);
+    summary.setAttribute('aria-expanded', String(isOpen));
+    stopTracking?.();
+    stopTracking = null;
+    if (isOpen) {
+      position();
+      window.addEventListener('scroll', position, true);
+      window.addEventListener('resize', position);
+      stopTracking = () => {
+        window.removeEventListener('scroll', position, true);
+        window.removeEventListener('resize', position);
+      };
+    }
+  });
+  const el = h('div', { class: 'qb-multi' }, summary, list);
   el.addEventListener('change', update);
   update();
   return {
     el,
     get: () => boxes.filter((b) => b.checked).map((b) => values[boxes.indexOf(b)]),
-    set: (list) => {
-      const wanted = new Set((Array.isArray(list) ? list : [list]).map(String));
+    set: (selected) => {
+      const wanted = new Set((Array.isArray(selected) ? selected : [selected]).map(String));
       boxes.forEach((b) => { b.checked = wanted.has(b.value); });
       update();
     },
