@@ -877,7 +877,7 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
 .asset-meta { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .json-tree { font: 12px/1.55 var(--mono); }
-.json-node > summary, .json-leaf {
+.json-node > summary {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -890,10 +890,11 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
 .json-caret { flex: none; align-self: center; color: var(--text-subtle); transition: transform 0.12s ease; }
 .json-node[open] > summary .json-caret { transform: rotate(90deg); }
 .json-children { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--border); }
-.json-leaf::before { content: ''; flex: none; width: 13px; }
-.json-key { color: var(--text); font-weight: 650; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+.json-leaf { position: relative; padding: 3px 26px 3px 21px; border-radius: 5px; }
+.json-key { color: var(--text); font-weight: 650; }
+.json-key::after { content: ''; margin-right: 6px; }
 .json-meta { color: var(--text-subtle); }
-.json-value { flex: 1; min-width: 0; color: var(--text-muted); overflow-wrap: anywhere; white-space: pre-wrap; }
+.json-value { color: var(--text-muted); overflow-wrap: anywhere; white-space: pre-wrap; }
 .json-number, .json-boolean { color: var(--accent); }
 .json-null { color: var(--text-subtle); font-style: italic; }
 .json-copy {
@@ -911,6 +912,7 @@ input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
   cursor: pointer;
 }
 .json-node > summary:hover .json-copy, .json-leaf:hover .json-copy, .json-copy:focus-visible { opacity: 1; }
+.json-leaf .json-copy { position: absolute; top: 2px; right: 2px; margin-left: 0; }
 .json-copy:hover { background: var(--brand-soft-strong); color: var(--text); }
 
 /* ── API picker and menus ───────────────────────────────────────────────── */
