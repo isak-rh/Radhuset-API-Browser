@@ -14,7 +14,7 @@
 
 import { isNgp, needsAuthForBrowse, needsAuthForDownload } from '../config/apis.js';
 import { areaToRequest } from '../geo/area.js';
-import { NetworkError, ensureOk, request } from '../lib/http.js';
+import { ensureOk, request } from '../lib/http.js';
 import { parseCollection, parseItem, siteDomain } from './models.js';
 
 export const CRS84 = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84';
@@ -123,27 +123,12 @@ export class StacClient {
    *
    * A schema URL is an arbitrary absolute URL and may live on a different
    * host than the API itself — Lantmäteriet serves its NGP schemas from
-   * namespace.lantmateriet.se, not api.lantmateriet.se. When the API needs
-   * auth to browse, the first attempt sends it, so a schema genuinely behind
-   * the same auth on a CORS-friendly host still works. But a browser blocks
-   * the request at the CORS preflight when the schema's host does not allow
-   * the Authorization header, and that surfaces only as a generic network
-   * failure — indistinguishable from a real outage from here — so on that
-   * failure the fetch is retried once without credentials, which is what an
-   * openly-served schema (the common case) needs.
+   * namespace.lantmateriet.se, not api.lantmateriet.se. NGP schemas are
+   * openly served regardless of the API's own auth requirement, so this
+   * never sends credentials.
    */
-  async fetchSchema(url, { signal } = {}) {
-    const init = { signal, headers: { Accept: 'application/schema+json, application/json' } };
-    if (!needsAuthForBrowse(this.api)) return this.#unauthedJson(url, init);
-    try {
-      return await this.#json(url, init, true);
-    } catch (error) {
-      // #json(url, init, false) would not do here: with credentials on hand it
-      // would still attach them (a required:false request means "don't fail if
-      // there are none", not "send none") and repeat the exact CORS failure.
-      if (!(error instanceof NetworkError)) throw error;
-      return this.#unauthedJson(url, init);
-    }
+  fetchSchema(url, { signal } = {}) {
+    return this.#unauthedJson(url, { signal, headers: { Accept: 'application/schema+json, application/json' } });
   }
 
   searchBody({ area = null, datetime = null, collections = [], query = null } = {}) {

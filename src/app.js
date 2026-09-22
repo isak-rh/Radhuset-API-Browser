@@ -560,7 +560,6 @@ export class App extends Emitter {
   async openQueryBuilder() {
     const { api } = this;
     if (!hasQueryBuilder(api)) return;
-    if (!(await ensureCredentials(this, api, 'browse'))) return;
     const key = `${api.schemaUrl}#${api.schemaQueryDepth}`;
     let result = this.#schemas.get(key);
     if (!result) {
