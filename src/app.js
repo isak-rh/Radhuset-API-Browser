@@ -15,7 +15,7 @@
 //   highlight            the highlighted rows changed ({ scroll })
 //   drawer, download
 
-import { ApiRegistry, hasQueryBuilder, needsAuthForBrowse } from './config/apis.js';
+import { ApiRegistry, hasQueryBuilder, isNgp, needsAuthForBrowse } from './config/apis.js';
 import { BindingStore, ProfileStore } from './auth/profiles.js';
 import { AuthSession } from './auth/session.js';
 import { Vault } from './auth/vault.js';
@@ -30,7 +30,7 @@ import { getLanguagePref, setLanguagePref, t, tn } from './i18n/index.js';
 import * as store from './lib/store.js';
 import { MapView, THUMBNAIL_LIMIT } from './map/map-view.js';
 import { StacClient } from './stac/client.js';
-import { scan } from './stac/schema-scanner.js';
+import { discoverQueryFields } from './stac/queryables.js';
 import { openApisDialog } from './ui/apis-dialog.js';
 import { ensureCredentials } from './ui/credentials.js';
 import { alertDialog, confirmDialog } from './ui/dialog.js';
@@ -89,7 +89,7 @@ const emptyResults = () => ({ items: [], byUid: new Map(), cursor: null, status:
 export class App extends Emitter {
   #searchController = null;
   #collectionsController = null;
-  #schemas = new Map();
+  #queryFields = new Map();
   #thumbnailNoticeShown = false;
 
   constructor(root) {
@@ -423,8 +423,9 @@ export class App extends Emitter {
     this.#collectionsController?.abort();
     this.api = api;
     this.prefs.set('api', api.name);
-    // A query is written against one API's schema, and collections belong to
-    // one API: neither carries over. The search area and time range do.
+    // A query is written against one API's fields and query dialect, and
+    // collections belong to one API: neither carries over. The search area and
+    // time range do.
     this.query = null;
     this.collections = { apiName: api.name, list: [], status: 'idle', error: null, titles: new Map() };
     this.selectedCollections = new Set();
@@ -557,30 +558,42 @@ export class App extends Emitter {
     return `${from ? `${from}T00:00:00Z` : '..'}/${to ? `${to}T23:59:59Z` : '..'}`;
   }
 
+  /**
+   * Open the Query Builder for the current API. NGP fields come from the
+   * configured schema; a STAC API is asked what it supports and what it can
+   * filter on — per checked collection, so they are part of the cache key.
+   */
   async openQueryBuilder() {
     const { api } = this;
     if (!hasQueryBuilder(api)) return;
-    const key = `${api.schemaUrl}#${api.schemaQueryDepth}`;
-    let result = this.#schemas.get(key);
+    const collections = isNgp(api) ? [] : [...this.selectedCollections].sort();
+    const key = isNgp(api)
+      ? `${api.schemaUrl}#${api.schemaQueryDepth}`
+      : `${api.url}#${JSON.stringify(collections)}`;
+    let result = this.#queryFields.get(key);
     if (!result) {
-      const notice = toast(t('app.loadingQuerySchema'), { timeout: 0 });
+      if (!isNgp(api) && (!(await ensureCredentials(this, api, 'browse')) || this.api !== api)) return;
+      const notice = toast(t('app.loadingQueryFields'), { timeout: 0 });
       try {
-        const schema = await new StacClient(api, this.auth).fetchSchema(api.schemaUrl);
-        result = scan(schema, api.schemaQueryDepth);
-        this.#schemas.set(key, result);
+        result = await discoverQueryFields(new StacClient(api, this.auth), collections);
+        this.#queryFields.set(key, result);
       } catch (error) {
-        alertDialog({ title: t('app.querySchemaFailedTitle'), message: error.message, kind: 'error' });
+        alertDialog({ title: t('app.queryFieldsFailedTitle'), message: error.message, kind: 'error' });
         return;
       } finally {
         notice.dismiss();
       }
     }
     if (this.api !== api) return;
+    if (!result.dialect) {
+      alertDialog({ title: t('app.noAttributeQueriesTitle'), message: t('app.noAttributeQueriesMessage', { name: api.name }) });
+      return;
+    }
     if (!result.fields.length) {
       alertDialog({ title: t('app.noQueryableFieldsTitle'), message: t('app.noQueryableFieldsMessage') });
       return;
     }
-    const query = await openQueryBuilder({ scan: result, existing: this.query });
+    const query = await openQueryBuilder({ scan: result, dialect: result.dialect, existing: this.query });
     if (query !== undefined && this.api === api) this.setQuery(query);
   }
 

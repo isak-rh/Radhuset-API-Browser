@@ -1,13 +1,12 @@
 // The search panel: API, credentials, filters and the Search button.
 
-import { hasQueryBuilder, needsAuthForBrowse } from '../config/apis.js';
+import { hasQueryBuilder, isNgp, needsAuthForBrowse } from '../config/apis.js';
 import { profileTypeLabel } from '../auth/profiles.js';
 import { button, clear, h, icon, select } from '../lib/dom.js';
 import { debounce, formatNumber } from '../lib/format.js';
 import { t, tn } from '../i18n/index.js';
 import { ApiPicker } from './api-picker.js';
 import { promptCredentials } from './credentials.js';
-import { queryFieldCount } from './query-builder.js';
 import { toast } from './toast.js';
 import { unlockVault } from './vault-dialogs.js';
 
@@ -145,10 +144,10 @@ export class Sidebar {
   #renderQuery() {
     const { app } = this;
     this.queryCard.hidden = !hasQueryBuilder(app.api);
-    const n = queryFieldCount(app.query);
-    this.queryText.textContent = n
-      ? tn('sidebar.conditionsApplied', n)
-      : t('sidebar.noFilterHint');
+    const n = app.query?.length || 0;
+    let text = isNgp(app.api) ? t('sidebar.noFilterHint') : t('sidebar.noFilter');
+    if (n) text = app.query.isAny ? tn('sidebar.conditionsAppliedAny', n) : tn('sidebar.conditionsApplied', n);
+    this.queryText.textContent = text;
     this.queryText.classList.toggle('muted', !n);
     this.queryClear.hidden = !n;
   }

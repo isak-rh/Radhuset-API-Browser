@@ -59,7 +59,13 @@ export function serializeApi(api) {
 }
 
 export const isNgp = (api) => api?.apiType === 'ngp';
-export const hasQueryBuilder = (api) => isNgp(api) && Boolean(api.schemaUrl);
+/**
+ * Whether the Query Builder is offered. An NGP API needs a configured schema
+ * URL. A STAC API describes its own queryables and filter support, which is only
+ * known by asking it, so the builder is offered and says so if the API turns out
+ * to have neither.
+ */
+export const hasQueryBuilder = (api) => Boolean(api) && (isNgp(api) ? Boolean(api.schemaUrl) : true);
 export const needsAuthForBrowse = (api) => api?.authRequired === 'all';
 export const needsAuthForDownload = (api) => api?.authRequired === 'all' || api?.authRequired === 'download';
 

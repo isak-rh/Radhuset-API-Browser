@@ -38,6 +38,8 @@ Välj ett API, markera ut ett område på kartan, sök och ladda ner det du hitt
 
 När du bläddrar i NGP-API:er rekommenderas att du använder **Frågebyggaren** för att begränsa dina sökningar till den typ av data du letar efter. Nedladdningar från NGP levereras i de format som Lantmäteriet anger.
 
+Frågebyggaren fungerar även för STAC-API:er som anger sökbara attribut, till exempel Lantmäteriets ortofoton, där du kan filtrera på flygår, upplösning eller spektraltyp. För de flesta STAC-API:er kan du välja om en träff ska uppfylla alla villkor eller något av dem.
+
 Högerklicka på ett objekt och välj **Egenskaper** för att öppna panelen med detaljerad information om det markerade objektet. Detta är särskilt användbart när man bläddrar i NGP.
 
 I en Chromium-baserad webbläsare (Chrome, Edge, Opera, Brave …) väljer du en mapp en gång, och alla filer i nedladdningen sparas direkt dit. I andra webbläsare laddas filerna i stället ner som en ZIP-fil eller separata filer, på det sätt webbläsaren normalt hanterar nedladdningar.
@@ -95,6 +97,8 @@ We recommend OAuth2 credentials, since they are revokable and don't provide admi
 Pick an API, mark out an area on the map, search, and download what you find. The search area can be drawn as a box or polygon, or loaded from a file (GeoJSON, Shapefile or GeoPackage). Tick the results you want and press **Download selected**.
 
 When browsing NGP APIs, it is recommended to use the **Query Builder** in order to limit your searches to the type of data you are looking for. Downloads from NGP are delivered in the formats specified by Lantmäteriet.
+
+The Query Builder also works for STAC APIs that publish queryable attributes, such as Lantmäteriet's orthophotos, where you can filter on flight year, resolution or spectral type. For most STAC APIs you can choose whether a result must match all conditions or any of them.
 
 Right-click an item and select **Properties** to open the panel with detailed information about the highlighted item. This is particularly useful when browsing NGP.
 

@@ -12,6 +12,8 @@ import { AuthSession } from '../src/auth/session.js';
 import { StacClient, withParams, CRS84 } from '../src/stac/client.js';
 import { parseItem } from '../src/stac/models.js';
 import { FieldType, scan } from '../src/stac/schema-scanner.js';
+import { AttributeQuery, CQL2_JSON, NGP_DIALECT, QUERY_EXTENSION, condition, cql2Text, dialectFromConformance, dialectOperators, queryDialect } from '../src/stac/attribute-query.js';
+import { discoverQueryFields, mergeQueryables, parseQueryables, resolveExternalRefs } from '../src/stac/queryables.js';
 import { filenameFromDisposition, filenameFromUrl, sanitizeFilename, uniqueName, withExtension } from '../src/downloads/filenames.js';
 import { planDownload, entriesFor } from '../src/downloads/runner.js';
 import { parseWkb } from '../src/geo/wkb.js';
@@ -344,6 +346,233 @@ test('schema scanner: subtypes, discriminator union, depth limit', () => {
   assert(result.fields.some((f) => f.key === 'nested.deep'));
   assert(!result.fields.some((f) => f.key === 'hidden'), 'queryable:false excluded');
   assert(!scan(schema, 1).fields.some((f) => f.key === 'nested.deep'), 'depth limit');
+});
+
+// ── attribute queries ──────────────────────────────────────────────────────
+
+// What Lantmäteriet's STAC APIs advertise (stac-vektor/-bild/-hojd, 2026-10).
+const LM_CONFORMANCE = [
+  'http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2',
+  'http://www.opengis.net/spec/cql2/1.0/conf/cql2-json',
+  'http://www.opengis.net/spec/cql2/1.0/conf/cql2-text',
+  'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter',
+  'https://api.stacspec.org/v1.0.0-rc.2/item-search#filter',
+  'https://api.stacspec.org/v1.0.0/core',
+  'https://api.stacspec.org/v1.0.0/item-search',
+  'https://api.stacspec.org/v1.0.0/item-search#query',
+];
+const CQL2_BASIC = queryDialect(CQL2_JSON);
+const CQL2_ADVANCED = queryDialect(CQL2_JSON, { advancedComparison: true });
+const prop = (key) => ({ property: key });
+
+test('attribute query: dialect from conformance prefers CQL2-JSON, falls back to the Query extension', () => {
+  equal(dialectFromConformance(LM_CONFORMANCE), CQL2_BASIC, 'Lantmäteriet gets basic CQL2');
+  equal(dialectFromConformance([...LM_CONFORMANCE, 'http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators']), CQL2_ADVANCED);
+  equal(dialectFromConformance(['https://api.stacspec.org/v1.0.0/item-search#query']), queryDialect(QUERY_EXTENSION), 'Earth Search');
+  equal(dialectFromConformance([
+    'https://api.stacspec.org/v1.0.0-rc.2/item-search#filter',
+    'http://www.opengis.net/spec/cql2/1.0/conf/cql2-text',
+    'https://api.stacspec.org/v1.0.0/item-search#query',
+  ]).language, QUERY_EXTENSION, 'filter without cql2-json');
+  equal(dialectFromConformance(['https://api.stacspec.org/v1.0.0/core']), null);
+});
+
+test('attribute query: like-based operators need advanced comparison; free-text "in" is CQL2 only', () => {
+  assert(!dialectOperators(CQL2_BASIC, FieldType.STRING).includes('contains'));
+  assert(dialectOperators(CQL2_ADVANCED, FieldType.STRING).includes('contains'));
+  assert(dialectOperators(CQL2_BASIC, FieldType.STRING).includes('in'));
+  assert(!dialectOperators(NGP_DIALECT, FieldType.STRING).includes('in'));
+});
+
+test('attribute query: NGP body is the Query extension, with day-boundary dates', () => {
+  const q = new AttributeQuery([
+    condition('feature.typ', 'in', ['a', 'b'], FieldType.ENUM),
+    condition('detaljplan.datum', 'gte', '2020-01-01', FieldType.DATE),
+    condition('detaljplan.datum', 'lte', '2020-12-31', FieldType.DATE),
+    condition('detaljplan.datum', 'eq', '2020-06-01', FieldType.DATE),
+  ], NGP_DIALECT);
+  equal(q.body(), {
+    query: {
+      'feature.typ': { in: ['a', 'b'] },
+      'detaljplan.datum': { gte: '2020-01-01T00:00:00Z', lte: '2020-12-31T23:59:59Z', eq: '2020-06-01' },
+    },
+  });
+  assert(!new AttributeQuery([condition('a', 'eq', 1, FieldType.NUMBER)], NGP_DIALECT, { matchAny: true }).isAny, 'match any ignored');
+  equal(new AttributeQuery([], NGP_DIALECT).body(), {});
+});
+
+test('attribute query: CQL2 body, AND/OR, unwrapped single condition', () => {
+  equal(new AttributeQuery([condition('spektraltyp', 'eq', 'cir', FieldType.STRING)], CQL2_BASIC).body(), {
+    'filter-lang': 'cql2-json',
+    filter: { op: '=', args: [prop('spektraltyp'), 'cir'] },
+  });
+  const conds = [condition('spektraltyp', 'neq', 'cir', FieldType.STRING), condition('flygar', 'gte', 2020, FieldType.NUMBER)];
+  equal(new AttributeQuery(conds, CQL2_BASIC).cql2().op, 'and');
+  equal(new AttributeQuery(conds, CQL2_BASIC, { matchAny: true }).cql2().op, 'or');
+});
+
+test('attribute query: ranges survive OR', () => {
+  const N = FieldType.NUMBER;
+  const q = new AttributeQuery([
+    condition('spektraltyp', 'eq', 'cir', FieldType.STRING),
+    condition('flygar', 'gt', 1950, N),
+    condition('flygar', 'lt', 1975, N),
+  ], CQL2_BASIC, { matchAny: true });
+  equal(q.preview(), "spektraltyp = 'cir' OR (flygar > 1950 AND flygar < 1975)");
+
+  const preview = (...conds) => new AttributeQuery(conds.map(([op, v]) => condition('f', op, v, N)), CQL2_BASIC, { matchAny: true }).preview();
+  equal(preview(['lt', 1975], ['gte', 1950]), 'f < 1975 AND f >= 1950', 'upper bound first');
+  equal(preview(['lt', 1950], ['gt', 1975]), 'f < 1950 OR f > 1975', 'outside query left alone');
+  equal(preview(['gt', 1950], ['lt', 1975], ['gt', 2000], ['lt', 2010]), '(f > 1950 AND f < 1975) OR (f > 2000 AND f < 2010)', 'two ranges');
+  equal(preview(['gte', 1975], ['lte', 1975]), 'f >= 1975 AND f <= 1975', 'inclusive equal bounds');
+  equal(preview(['gt', 1975], ['lt', 1975]), 'f > 1975 OR f < 1975', 'exclusive equal bounds');
+
+  const D = FieldType.DATETIME;
+  const dates = new AttributeQuery([
+    condition('datetime', 'gte', '2020-01-01T00:00:00Z', D),
+    condition('datetime', 'lt', '2021-01-01T00:00:00Z', D),
+    condition('flygar', 'gt', 2022, N),
+  ], CQL2_BASIC, { matchAny: true }).cql2();
+  equal([dates.op, dates.args[0].op], ['or', 'and'], 'date range paired');
+});
+
+test('attribute query: CQL2 in, temporal literals, like escaping, preview text', () => {
+  const c = condition('spektraltyp', 'in', ['rgb', 'rgbi'], FieldType.STRING);
+  equal(new AttributeQuery([c], CQL2_BASIC).cql2(), {
+    op: 'or',
+    args: [{ op: '=', args: [prop('spektraltyp'), 'rgb'] }, { op: '=', args: [prop('spektraltyp'), 'rgbi'] }],
+  });
+  equal(new AttributeQuery([c], CQL2_ADVANCED).cql2(), { op: 'in', args: [prop('spektraltyp'), ['rgb', 'rgbi']] });
+
+  const args = new AttributeQuery([
+    condition('datetime', 'gte', '2022-01-01T00:00:00Z', FieldType.DATETIME),
+    condition('d', 'lt', '2022-01-01', FieldType.DATE),
+  ], CQL2_BASIC).cql2().args;
+  equal(args[0].args[1], { timestamp: '2022-01-01T00:00:00Z' });
+  equal(args[1].args[1], { date: '2022-01-01' });
+
+  equal(new AttributeQuery([condition('n', 'startsWith', '50%_a', FieldType.STRING)], CQL2_ADVANCED).cql2(), { op: 'like', args: [prop('n'), '50\\%\\_a%'] });
+
+  equal(new AttributeQuery([
+    condition('spektraltyp', 'in', ['rgb', "it's"], FieldType.STRING),
+    condition('flygar', 'gte', 2020, FieldType.NUMBER),
+    condition('datetime', 'lt', '2024-01-01T00:00:00Z', FieldType.DATETIME),
+  ], CQL2_BASIC).preview(), "(spektraltyp = 'rgb' OR spektraltyp = 'it''s') AND flygar >= 2020 AND datetime < TIMESTAMP('2024-01-01T00:00:00Z')");
+  equal(cql2Text({ op: '=', args: [prop('b'), true] }), 'b = TRUE');
+});
+
+// stac-bild's /queryables, trimmed.
+const BILD_QUERYABLES = {
+  title: 'STAC Queryables.',
+  properties: {
+    id: { $ref: 'https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json#/x' },
+    flygar: { type: 'number', title: 'flygår', maximum: 2050, minimum: 1950 },
+    datetime: { type: 'string', format: 'date-time' },
+    geometry: { $ref: 'https://geojson.org/schema/Feature.json' },
+    spektraltyp: { type: 'string', description: 'spektraltyp [rgbi, rgb, cir, gra]' },
+    tags: { type: 'array', items: { type: 'string' } },
+    platform: { type: ['string', 'null'], enum: ['a', 'b'] },
+  },
+};
+
+test('queryables: parsed into flat fields; geometry and arrays left out', () => {
+  const fields = parseQueryables(BILD_QUERYABLES, CQL2_BASIC);
+  const byKey = new Map(fields.map((f) => [f.key, f]));
+  equal(fields.map((f) => [f.key, f.fieldType]), [
+    ['datetime', FieldType.DATETIME],
+    ['flygar', FieldType.NUMBER],
+    ['id', FieldType.STRING],
+    ['platform', FieldType.ENUM],
+    ['spektraltyp', FieldType.STRING],
+  ]);
+  const flygar = byKey.get('flygar');
+  equal([flygar.minimum, flygar.maximum, flygar.title], [1950, 2050, 'flygår']);
+  equal(byKey.get('platform').values, ['a', 'b']);
+  equal(byKey.get('spektraltyp').operators, ['eq', 'neq', 'in']);
+});
+
+test('queryables: merge keeps the first definition', () => {
+  const merged = mergeQueryables([
+    { title: 'A', properties: { x: { type: 'number' } } },
+    { properties: { x: { type: 'string' }, y: { type: 'string' } } },
+  ]);
+  equal(merged.title, 'A');
+  equal(merged.properties.x, { type: 'number' });
+  assert('y' in merged.properties);
+});
+
+test('queryables: external $refs resolved; failures and geometry left alone', async () => {
+  const eo = 'https://stac-extensions.github.io/eo/v1.0.0/schema.json';
+  const doc = { definitions: { fields: { properties: { 'eo:cloud_cover': { title: 'Cloud Cover', type: 'number', minimum: 0, maximum: 100 } } } } };
+  const fetched = [];
+  const fetch = async (url) => {
+    fetched.push(url);
+    if (url !== eo) throw new Error('offline');
+    return doc;
+  };
+  const schema = {
+    properties: {
+      'eo:cloud_cover': { $ref: `${eo}#/definitions/fields/properties/eo:cloud_cover` },
+      id: { $ref: 'https://schemas.stacspec.org/item.json#/x', title: 'Item ID' },
+      geometry: { $ref: 'https://geojson.org/schema/Feature.json' },
+    },
+  };
+  const fields = parseQueryables(await resolveExternalRefs(schema, fetch), CQL2_BASIC);
+  const cc = fields.find((f) => f.key === 'eo:cloud_cover');
+  equal([cc.fieldType, cc.maximum], [FieldType.NUMBER, 100]);
+  equal(fields.find((f) => f.key === 'id').fieldType, FieldType.STRING, 'fetch failed');
+  assert(!fetched.includes('https://geojson.org/schema/Feature.json'));
+});
+
+test('queryables: STAC discovery reads conformance, then collection queryables, then the global ones', async () => {
+  const conformsTo = ['https://api.stacspec.org/v1.0.0/item-search#query'];
+  const calls = stubFetch((url) => {
+    if (url === 'https://stac.test/') return json({ conformsTo, links: [{ rel: 'http://www.opengis.net/def/rel/ogc/1.0/queryables', href: 'https://stac.test/q' }] });
+    if (url === 'https://stac.test/collections/a/queryables') return json({ properties: { 'eo:cloud_cover': { type: 'number' } } });
+    if (url === 'https://stac.test/collections/b%2Fc/queryables') return json({}, 404);
+    if (url === 'https://stac.test/q') return json({ properties: { flygar: { type: 'number' } } });
+    return json({}, 404);
+  });
+  try {
+    const client = new StacClient({ name: 'S', url: 'https://stac.test', apiType: 'stac', authRequired: 'download' }, { credentialsFor: async () => null });
+    const perCollection = await discoverQueryFields(client, ['a', 'b/c']);
+    equal(perCollection.dialect, queryDialect(QUERY_EXTENSION));
+    equal(perCollection.title, 'S');
+    equal(perCollection.fields.map((f) => f.key), ['eo:cloud_cover']);
+    equal(perCollection.fields[0].operators, ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']);
+
+    const global = await discoverQueryFields(client, []);
+    equal(global.fields.map((f) => f.key), ['flygar'], 'landing page queryables link followed');
+  } finally {
+    calls.restore();
+  }
+
+  const none = stubFetch(() => json({ conformsTo: ['https://api.stacspec.org/v1.0.0/core'] }));
+  try {
+    const client = new StacClient({ name: 'S', url: 'https://stac.test', apiType: 'stac', authRequired: 'none' }, { credentialsFor: async () => null });
+    equal((await discoverQueryFields(client)).dialect, null);
+    equal(none.length, 1, 'no queryables fetched when there is no dialect');
+  } finally {
+    none.restore();
+  }
+
+  const noEndpoint = stubFetch((url) => (url === 'https://stac.test/' ? json({ conformsTo }) : json({}, 404)));
+  try {
+    const client = new StacClient({ name: 'S', url: 'https://stac.test', apiType: 'stac', authRequired: 'none' }, { credentialsFor: async () => null });
+    const result = await discoverQueryFields(client);
+    equal([result.dialect?.language, result.fields], [QUERY_EXTENSION, []], 'missing /queryables is not an error');
+  } finally {
+    noEndpoint.restore();
+  }
+});
+
+test('client: the search body carries the query in its dialect', () => {
+  const client = new StacClient({ name: 'S', url: 'https://stac.test', apiType: 'stac', authRequired: 'none' }, {});
+  const cql2 = new AttributeQuery([condition('flygar', 'gte', 2020, FieldType.NUMBER)], CQL2_BASIC);
+  equal(client.searchBody({ query: cql2 }), { limit: 100, 'filter-lang': 'cql2-json', filter: { op: '>=', args: [prop('flygar'), 2020] } });
+  const ext = new AttributeQuery([condition('flygar', 'gte', 2020, FieldType.NUMBER)], NGP_DIALECT);
+  equal(client.searchBody({ query: ext }), { limit: 100, query: { flygar: { gte: 2020 } } });
+  equal(client.searchBody({ query: null }), { limit: 100 });
 });
 
 // ── geometry ───────────────────────────────────────────────────────────────

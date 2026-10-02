@@ -35,7 +35,7 @@ Listan över inbyggda API:er. Distribueras med appen och innehåller ingen anvä
 }
 ```
 
-`api_type` är `stac` eller `ngp`. `auth_required` är `none`, `download` eller `all` (NGP-API:er kräver alltid `all`, oavsett vad som anges). `schema_url` och `schema_query_depth` gäller bara NGP-API:er och styr Query Builder.
+`api_type` är `stac` eller `ngp`. `auth_required` är `none`, `download` eller `all` (NGP-API:er kräver alltid `all`, oavsett vad som anges). `schema_url` och `schema_query_depth` gäller bara NGP-API:er och styr Query Builder. Ett STAC-API anger själv sina sökbara attribut via `/queryables`, och Query Builder frågar API:et vilket filterspråk det stöder: CQL2-JSON via Filter-tillägget i första hand (det enda som kan uttrycka OR), annars STAC Query-tillägget. Stöder API:et inget av dem säger Query Builder det.
 
 ## Inloggningsuppgifter och säkerhet
 
@@ -82,7 +82,7 @@ src/
   geo/               sökområdesgeometri, CRS-projicering, filinläsare (GeoJSON/Shapefile/GeoPackage)
   lib/               små ramverksfria hjälpfunktioner (DOM, HTTP, lagring, formatering)
   map/               OpenLayers-kartomslaget
-  stac/              STAC/NGP-klienten och NGP-schemascannern
+  stac/              STAC/NGP-klienten, NGP-schemascannern, STAC-queryables och attributfrågor (Query-tillägget / CQL2)
   ui/                dialoger och paneler, kopplade till app.js
   styles/app.css     hela stilmallen
 config/apis.json     listan över inbyggda API:er (distribueras; ingen användardata)
@@ -134,7 +134,7 @@ The list of built-in APIs. Shipped with the app and holds no user data — edit 
 }
 ```
 
-`api_type` is `stac` or `ngp`. `auth_required` is `none`, `download` or `all` (NGP APIs always require `all`, regardless of what's set). `schema_url` and `schema_query_depth` only apply to NGP APIs and drive the Query Builder.
+`api_type` is `stac` or `ngp`. `auth_required` is `none`, `download` or `all` (NGP APIs always require `all`, regardless of what's set). `schema_url` and `schema_query_depth` only apply to NGP APIs and drive the Query Builder. A STAC API publishes its own queryable attributes at `/queryables`, and the Query Builder asks the API which filter language it supports: CQL2-JSON via the Filter extension by preference (the only one that can express OR), otherwise the STAC Query extension. If the API supports neither, the Query Builder says so.
 
 ## Credentials & security
 
@@ -181,7 +181,7 @@ src/
   geo/               search-area geometry, CRS reprojection, file loaders (GeoJSON/Shapefile/GeoPackage)
   lib/               small framework-free helpers (DOM building, HTTP, storage, formatting)
   map/               the OpenLayers map wrapper
-  stac/              the STAC/NGP client and the NGP schema scanner
+  stac/              the STAC/NGP client, the NGP schema scanner, STAC queryables and attribute queries (Query extension / CQL2)
   ui/                dialogs and panels, wired to app.js
   styles/app.css     the whole stylesheet
 config/apis.json     the built-in API list (deploy-managed; no user data)

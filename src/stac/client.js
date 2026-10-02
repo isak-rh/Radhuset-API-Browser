@@ -1,5 +1,5 @@
-// A small STAC API client: search with pagination, collections, schemas, and
-// asset downloads — all with the bound auth profile applied.
+// A small STAC API client: search with pagination, collections, schemas and
+// queryables, and asset downloads — all with the bound auth profile applied.
 //
 // Coordinates are WGS84 end to end. The two API types differ only in how they
 // are told so:
@@ -119,24 +119,63 @@ export class StacClient {
   }
 
   /**
-   * A JSON schema for the Query Builder.
+   * A JSON schema for the Query Builder: an NGP API's domain schema, or a STAC
+   * extension schema that a queryable points to.
    *
    * A schema URL is an arbitrary absolute URL and may live on a different
    * host than the API itself — Lantmäteriet serves its NGP schemas from
-   * namespace.lantmateriet.se, not api.lantmateriet.se. NGP schemas are
-   * openly served regardless of the API's own auth requirement, so this
-   * never sends credentials.
+   * namespace.lantmateriet.se, not api.lantmateriet.se, and STAC extension
+   * schemas live on third-party hosts. Both are openly served regardless of
+   * the API's own auth requirement, so this never sends credentials.
    */
   fetchSchema(url, { signal } = {}) {
     return this.#unauthedJson(url, { signal, headers: { Accept: 'application/schema+json, application/json' } });
   }
 
+  /** The API root: `conformsTo` and the `links` that locate its endpoints. */
+  getLandingPage({ signal } = {}) {
+    return this.#json(`${this.api.url}/`, { signal, headers: { Accept: 'application/json' } }, needsAuthForBrowse(this.api));
+  }
+
+  /**
+   * The conformance classes the API advertises. Read from the landing page's
+   * `conformsTo` when present (STAC API); OGC API - Features servers may publish
+   * them only at /conformance.
+   */
+  async getConformance(landing = null, { signal } = {}) {
+    landing ??= await this.getLandingPage({ signal });
+    if (Array.isArray(landing.conformsTo)) return landing.conformsTo;
+    const data = await this.#json(`${this.api.url}/conformance`, { signal, headers: { Accept: 'application/json' } }, needsAuthForBrowse(this.api));
+    return Array.isArray(data.conformsTo) ? data.conformsTo : [];
+  }
+
+  /**
+   * A queryables JSON Schema — one collection's, or with *collectionId* null the
+   * API-wide one. The API-wide URL comes from the landing page's queryables link
+   * when there is one, falling back to the conventional /queryables.
+   */
+  getQueryables(collectionId, { landing = null, signal } = {}) {
+    let url = `${this.api.url}/queryables`;
+    if (collectionId != null) {
+      url = `${this.api.url}/collections/${encodeURIComponent(collectionId)}/queryables`;
+    } else {
+      const link = (landing?.links || []).find((l) => l?.rel === 'queryables' || l?.rel === 'http://www.opengis.net/def/rel/ogc/1.0/queryables');
+      if (link?.href) url = new URL(link.href, `${this.api.url}/`).toString();
+    }
+    return this.#json(url, { signal, headers: { Accept: 'application/schema+json, application/json' } }, needsAuthForBrowse(this.api));
+  }
+
+  /**
+   * *query* is an AttributeQuery. It serialises itself in the dialect it was
+   * built for — the Query extension's `query` or the Filter extension's
+   * CQL2-JSON `filter` — so this does not need to know which.
+   */
   searchBody({ area = null, datetime = null, collections = [], query = null } = {}) {
     const body = { limit: PAGE_SIZE };
     if (area) Object.assign(body, areaToRequest(area));
     if (datetime) body.datetime = datetime;
     if (collections.length) body.collections = collections;
-    if (query && Object.keys(query).length) body.query = query;
+    if (query) Object.assign(body, query.body());
     return body;
   }
 
