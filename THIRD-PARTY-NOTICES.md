@@ -11,10 +11,16 @@ directory holds the component's own license text.
 | fflate | 0.8.3 | MIT | <https://github.com/101arrowz/fflate> | `vendor/fflate/LICENSE` |
 | sql.js | 1.14.2 | MIT (SQLite itself is in the public domain) | <https://github.com/sql-js/sql.js> | `vendor/sqljs/LICENSE` |
 | Figtree typeface | 2.0 | SIL Open Font License 1.1 | <https://github.com/erikdkennedy/figtree> | `assets/fonts/OFL.txt` |
+| GoatCounter count.js | fetched 2026-10-16 | ISC | <https://github.com/arp242/goatcounter> | header of `vendor/goatcounter/count.js` |
 
 The Figtree font files are the Latin and Latin Extended subsets as distributed by
 Google Fonts. They are served from this site rather than from Google, so using the
 app sends no requests to Google.
+
+The GoatCounter script counts page views for the published site. It sets no
+cookies. It sends the page path, title, referrer and screen size to
+`isak-rh.goatcounter.com`. The browser also sends its IP address and user agent,
+as it does with any request.
 
 ## Map data
 
